@@ -13,6 +13,11 @@ on:
 permissions:
   contents: write
 
+env:
+  # Máy Windows của GitHub mặc định in ra màn hình bằng bảng mã cp1252 (không có chữ tiếng Việt)
+  PYTHONUTF8: "1"
+  PYTHONIOENCODING: utf-8
+
 jobs:
   build:
     strategy:
