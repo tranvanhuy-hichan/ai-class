@@ -1,0 +1,59 @@
+# ================== CẤU HÌNH HỆ THỐNG ==================
+# Mọi ngưỡng đều có thể chỉnh ở đây mà không cần sửa code.
+
+models:
+  pose: weights/yolo11n-pose.pt   # Nhận diện người + 17 điểm khung xương (tự tải về lần đầu)
+  object: weights/yolo11n.pt      # Nhận diện vật thể COCO, dùng lớp "cell phone"
+  # Cách phát hiện nhắm mắt:
+  #   mediapipe  - đo độ nhắm mắt bằng 468 điểm khuôn mặt (MediaPipe), ổn định, không cần huấn luyện
+  #   classifier - mô hình mắt mở/nhắm tự huấn luyện (scripts/train_eye_classifier.py)
+  #   off        - tắt, chỉ dùng gục đầu lâu để báo ngủ gục
+  eye_method: mediapipe
+  face_landmarker: weights/face_landmarker.task   # tự tải về nếu chưa có
+  eye_classifier: weights/eye_cls.pt
+  custom_behavior: ""          # (Tuỳ chọn) mô hình hành vi tự huấn luyện, vd: weights/behavior.pt
+  device: ""                   # "" = tự chọn (GPU nếu có), "cpu", hoặc "0"
+
+detection:
+  person_conf: 0.4             # Độ tin cậy tối thiểu để nhận là người
+  phone_conf: 0.3              # Độ tin cậy tối thiểu để nhận là điện thoại
+  keypoint_conf: 0.5           # Độ tin cậy tối thiểu của 1 điểm khung xương
+  imgsz: 640                   # Webcam gần (1-3 người): 640. Cả lớp học: 1280 (thấy người nhỏ ở bàn cuối, chậm hơn ~3 lần)
+
+rules:
+  # Tỉ lệ (khoảng cách đầu cao hơn vai) / (độ rộng vai).
+  # Ngồi thẳng ~0.5-1.0; gục đầu xuống bàn thì đầu gần/thấp hơn vai -> nhỏ.
+  head_down_ratio: 0.15
+  # Điện thoại được tính là "đang cầm" nếu cách cổ tay < hệ số * độ rộng vai
+  phone_wrist_factor: 0.8
+  # Mắt được coi là nhắm nếu điểm nhắm mắt > ngưỡng (MediaPipe: mở ~0.1-0.4, nhắm ~0.6-0.9)
+  blink_threshold: 0.55
+  # Với eye_method: classifier - mắt nhắm nếu xác suất "closed" > ngưỡng này
+  eye_closed_prob: 0.8
+  # Chỉ phân loại mắt khi khoảng cách 2 mắt trong ảnh >= số pixel này (mặt đủ to)
+  min_eye_distance_px: 30
+
+timing:                        # Hành vi phải kéo dài bao lâu (giây) mới cảnh báo
+  phone: 2.0
+  head_down: 3.0
+  sleeping: 10.0               # Gục đầu liên tục >= 10s -> coi là ngủ gục
+  eyes_closed: 3.0             # Nhắm mắt liên tục >= 3s -> coi là ngủ gật
+  grace: 0.8                   # Cho phép "mất dấu" ngắn (giây) mà không reset bộ đếm
+  cooldown: 15.0               # Sau khi cảnh báo 1 học sinh, chờ bấy nhiêu giây mới cảnh báo lại
+
+# Ánh xạ tên lớp của mô hình tự huấn luyện -> hành vi của hệ thống.
+# Sửa theo đúng tên lớp trong file data.yaml của bộ dữ liệu bạn dùng.
+custom_class_map:
+  phone: phone
+  using_phone: phone
+  "looking at a phone": phone
+  sleeping: sleeping
+  bow_head: head_down
+  "bowing the head": head_down
+  "leaning over the table": head_down
+
+output:
+  log_dir: logs                # Lưu file CSV và ảnh chụp khi có cảnh báo
+  save_snapshots: true
+  sound: true
+  font: ""                     # Đường dẫn font .ttf hỗ trợ tiếng Việt ("" = tự tìm)

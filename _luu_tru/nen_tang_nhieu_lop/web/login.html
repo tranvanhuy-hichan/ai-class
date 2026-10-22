@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Đăng nhập · Lớp học AI</title>
+<link rel="stylesheet" media="print" onload="this.media='all'"
+      href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap">
+<script>try { const t = localStorage.getItem("theme"); if (t) document.documentElement.dataset.theme = t; } catch {}</script>
+<style>
+  :root { --bg: #090d14; --surface: #111723; --surface-2: #171f2e; --border: #222c3e; --text: #e8edf6; --muted: #8592a8;
+          --accent: #6d6afe; --accent-2: #22d3ee; --bad: #f43f5e; color-scheme: dark; }
+  :root[data-theme="light"] { --bg: #f3f5fa; --surface: #fff; --surface-2: #f5f7fb; --border: #e3e7ef; --text: #0f172a; --muted: #5f6b80; color-scheme: light; }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 16px; background: var(--bg); color: var(--text);
+         font: 14px/1.5 "Be Vietnam Pro", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+         background-image: radial-gradient(60rem 30rem at 10% -10%, #6d6afe22, transparent), radial-gradient(50rem 30rem at 110% 110%, #22d3ee1a, transparent); }
+  .box { width: min(400px, 100%); background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 32px 28px; box-shadow: 0 20px 60px #0005; }
+  .logo { width: 52px; height: 52px; border-radius: 15px; display: grid; place-items: center; color: #fff; margin-bottom: 18px;
+          background: linear-gradient(135deg, var(--accent), var(--accent-2)); box-shadow: 0 8px 24px #6d6afe55; }
+  .logo svg { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  h1 { margin: 0 0 4px; font-size: 22px; }
+  p.sub { margin: 0 0 22px; color: var(--muted); }
+  label { display: block; font-weight: 500; margin: 14px 0 6px; }
+  input { width: 100%; font: inherit; padding: 11px 13px; border-radius: 11px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); outline: none; }
+  input:focus { border-color: var(--accent); }
+  button { width: 100%; margin-top: 22px; font: inherit; font-weight: 600; padding: 12px; border-radius: 11px; border: 0; background: var(--accent); color: #fff; cursor: pointer; }
+  button:disabled { opacity: .6; }
+  .err { color: var(--bad); min-height: 20px; margin-top: 12px; font-size: 13px; }
+  .note { margin-top: 18px; color: var(--muted); font-size: 12.5px; text-align: center; }
+</style>
+</head>
+<body>
+<form class="box" id="form">
+  <div class="logo"><svg viewBox="0 0 24 24"><path d="m16 13 5.2 3.5a.5.5 0 0 0 .8-.4V7.9a.5.5 0 0 0-.8-.4L16 10.5"/><rect x="2" y="6" width="14" height="12" rx="2"/></svg></div>
+  <h1 id="title">Đăng nhập</h1>
+  <p class="sub" id="sub">Hệ thống cảnh báo hành vi lớp học</p>
+  <div id="nameRow" hidden><label for="name">Họ tên</label><input id="name" autocomplete="name" placeholder="Ví dụ: Nguyễn Văn A"></div>
+  <label for="username">Tên đăng nhập</label><input id="username" autocomplete="username" required autofocus>
+  <label for="password">Mật khẩu</label><input id="password" type="password" autocomplete="current-password" required>
+  <div id="pw2Row" hidden><label for="password2">Nhập lại mật khẩu</label><input id="password2" type="password" autocomplete="new-password"></div>
+  <button id="btn">Đăng nhập</button>
+  <div class="err" id="err"></div>
+  <div class="note" id="note">Quên mật khẩu? Hãy nhờ quản trị viên của trường đặt lại.</div>
+</form>
+<script>
+const $ = id => document.getElementById(id);
+let setup = false;
+fetch("/api/setup-needed").then(r => r.json()).then(d => {
+  if (!d.needed) return;
+  setup = true;
+  $("title").textContent = "Chào mừng! 👋";
+  $("sub").textContent = "Lần đầu sử dụng: hãy tạo tài khoản quản trị viên. Tài khoản này dùng để thêm lớp học và giáo viên.";
+  $("nameRow").hidden = $("pw2Row").hidden = false;
+  $("password").autocomplete = "new-password";
+  $("btn").textContent = "Tạo tài khoản & bắt đầu";
+  $("note").textContent = "Mật khẩu ít nhất 6 ký tự. Hãy ghi nhớ cẩn thận.";
+});
+$("form").onsubmit = async ev => {
+  ev.preventDefault();
+  $("err").textContent = "";
+  if (setup && $("password").value !== $("password2").value) return $("err").textContent = "Hai mật khẩu không giống nhau";
+  $("btn").disabled = true;
+  try {
+    const r = await fetch(setup ? "/api/setup" : "/api/login", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: $("username").value, password: $("password").value, name: $("name").value }),
+    });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.detail || "Có lỗi xảy ra");
+    location.href = "/";
+  } catch (e) { $("err").textContent = e.message; $("btn").disabled = false; }
+};
+</script>
+</body>
+</html>

@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Camera điện thoại</title>
+<style>
+  :root { --bg: #0f141b; --card: #18202b; --text: #e6ebf2; --muted: #93a0b2; --accent: #2563eb; --bad: #dc2626; --ok: #16a34a; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text);
+         min-height: 100vh; display: flex; flex-direction: column; }
+  header { padding: 14px 16px; font-weight: 700; }
+  video { width: 100%; max-height: 60vh; background: #000; object-fit: contain; }
+  .bar { padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
+  button { font: inherit; font-size: 17px; padding: 14px; border-radius: 12px; border: 0; background: var(--accent); color: #fff; font-weight: 600; }
+  button.sec { background: var(--card); color: var(--text); }
+  .status { font-size: 14px; color: var(--muted); }
+  .alert { background: var(--bad); color: #fff; padding: 12px; border-radius: 10px; font-weight: 600; display: none; }
+  .ok { color: var(--ok); }
+  .warn { background: #7c2d12; padding: 12px; border-radius: 10px; font-size: 14px; line-height: 1.5; }
+</style>
+</head>
+<body>
+<header id="head">📱 Điện thoại làm camera lớp học</header>
+<video id="v" playsinline muted autoplay></video>
+<div class="bar">
+  <div class="alert" id="alert"></div>
+  <div id="insecure" class="warn" style="display:none">
+    Trình duyệt chỉ cho dùng camera khi mở bằng <b>https://</b>. Hãy mở đúng địa chỉ HTTPS
+    hiện trên trang cài đặt của máy tính (cổng 8443).</div>
+  <button id="start">▶ Bắt đầu</button>
+  <button id="flip" class="sec">🔄 Đổi camera trước/sau</button>
+  <div class="status" id="status">Đặt điện thoại cố định, hướng về phía học sinh, rồi bấm Bắt đầu.</div>
+</div>
+<canvas id="c" hidden></canvas>
+<script>
+const v = document.getElementById("v"), c = document.getElementById("c"), st = document.getElementById("status");
+let facing = "environment", stream, ws, sending = false, sent = 0, lastCount = Date.now();
+const FPS = 8, WIDTH = 960;  // gửi 8 khung/giây, rộng 960px là đủ cho AI và nhẹ cho Wi-Fi
+const TOKEN = location.pathname.split("/").pop();  // /station/<mã bí mật của lớp>
+
+if (!window.isSecureContext) document.getElementById("insecure").style.display = "block";
+fetch("/api/station/" + TOKEN).then(r => r.json()).then(d => {
+  if (d.name) document.getElementById("head").textContent = "📱 Camera lớp " + d.name;
+  if (d.name && !d.ready) st.textContent = "Lớp này chưa được đặt nguồn camera là “Điện thoại”. Nhờ quản trị viên đổi trong mục Quản lý → Lớp học.";
+});
+
+async function openCamera() {
+  if (stream) stream.getTracks().forEach(t => t.stop());
+  stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facing, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false });
+  v.srcObject = stream;
+  await v.play();
+}
+
+function connect() {
+  ws = new WebSocket((location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/ws/station/" + TOKEN);
+  ws.binaryType = "arraybuffer";
+  ws.onopen = () => { st.innerHTML = '<span class="ok">● Đã kết nối máy tính</span>'; };
+  let refused = false;
+  ws.onclose = () => { if (refused) return; st.textContent = "Mất kết nối, đang thử lại..."; setTimeout(connect, 2000); };
+  ws.onmessage = ev => {
+    sending = false;  // máy chủ đã nhận xong khung trước -> gửi khung tiếp
+    const d = JSON.parse(ev.data);
+    if (d.error) { refused = true; st.textContent = d.error; return; }
+    const a = d.announcements;
+    const box = document.getElementById("alert");
+    box.style.display = a.length ? "block" : "none";
+    box.textContent = a.map(x => "⚠️ " + x).join("\n");
+  };
+}
+
+function sendFrame() {
+  if (!ws || ws.readyState !== 1 || sending || !v.videoWidth) return;
+  const scale = Math.min(1, WIDTH / v.videoWidth);
+  c.width = v.videoWidth * scale; c.height = v.videoHeight * scale;
+  c.getContext("2d").drawImage(v, 0, 0, c.width, c.height);
+  c.toBlob(b => {
+    if (!b || ws.readyState !== 1) return;
+    sending = true;
+    b.arrayBuffer().then(buf => ws.send(buf));
+    sent++;
+    if (Date.now() - lastCount > 2000) {
+      st.innerHTML = `<span class="ok">● Đang gửi ${(sent * 1000 / (Date.now() - lastCount)).toFixed(1)} khung/giây</span>`;
+      sent = 0; lastCount = Date.now();
+    }
+  }, "image/jpeg", 0.7);
+}
+
+document.getElementById("start").onclick = async () => {
+  try {
+    await openCamera();
+    if (!ws) connect();
+    document.getElementById("start").style.display = "none";
+    setInterval(sendFrame, 1000 / FPS);
+    // Giữ màn hình luôn sáng để camera không bị tắt
+    if (navigator.wakeLock) navigator.wakeLock.request("screen").catch(() => {});
+  } catch (e) { st.textContent = "Không mở được camera: " + e.message; }
+};
+document.getElementById("flip").onclick = async () => {
+  facing = facing === "environment" ? "user" : "environment";
+  if (stream) await openCamera().catch(e => st.textContent = e.message);
+};
+</script>
+</body>
+</html>

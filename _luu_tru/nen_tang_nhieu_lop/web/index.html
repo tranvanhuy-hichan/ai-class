@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Lớp học AI</title>
+<link rel="stylesheet" media="print" onload="this.media='all'"
+      href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap">
+<script>try { const t = localStorage.getItem("theme"); if (t) document.documentElement.dataset.theme = t; } catch {}</script>
+<link rel="stylesheet" href="/assets/app.css">
+</head>
+<body>
+<!-- Bộ biểu tượng (SVG, không cần Internet) -->
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="i-video" viewBox="0 0 24 24"><path d="m16 13 5.2 3.5a.5.5 0 0 0 .8-.4V7.9a.5.5 0 0 0-.8-.4L16 10.5"/><rect x="2" y="6" width="14" height="12" rx="2"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></symbol>
+  <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></symbol>
+  <symbol id="i-bell-off" viewBox="0 0 24 24"><path d="M8.7 3A6 6 0 0 1 18 8a21.3 21.3 0 0 0 .6 5"/><path d="M17 17H3s3-2 3-9a4.67 4.67 0 0 1 .3-1.7"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/><path d="m2 2 20 20"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></symbol>
+  <symbol id="i-max" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="m21.7 18-8-14a2 2 0 0 0-3.5 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3"/><path d="M12 9v4M12 17h.01"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 17V3"/><path d="m6 11 6 6 6-6"/><path d="M19 21H5"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M6.3 17.7l-1.4 1.4M19.1 4.9l-1.4 1.4"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></symbol>
+  <symbol id="i-qr" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM21 14v.01M14 21h.01M17 21h4v-4"/></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></symbol>
+  <symbol id="i-upload" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/></symbol>
+  <symbol id="i-cam" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="m6 3 14 9-14 9z"/></symbol>
+  <symbol id="i-gauge" viewBox="0 0 24 24"><path d="m12 14 4-4"/><path d="M3.3 19a10 10 0 1 1 17.4 0"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></symbol>
+  <symbol id="i-logout" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></symbol>
+  <symbol id="i-key" viewBox="0 0 24 24"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6M15.5 7.5l3 3L22 7l-3-3"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7M19 12H5"/></symbol>
+  <symbol id="i-school" viewBox="0 0 24 24"><path d="M14 22v-4a2 2 0 1 0-4 0v4"/><path d="m18 10 4 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-8l4-2"/><path d="M18 5v17M6 5v17"/><path d="m4 6 8-4 8 4"/><circle cx="12" cy="9" r="2"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+</svg>
+
+<div class="app">
+  <nav class="side">
+    <div class="brand">
+      <div class="logo"><svg class="i"><use href="#i-video"/></svg></div>
+      <div><b>Lớp học AI</b><small>Cảnh báo hành vi</small></div>
+    </div>
+    <a class="nav" href="#overview" data-view="overview"><svg class="i"><use href="#i-grid"/></svg>Tổng quan<span class="count" id="navCount">0</span></a>
+    <a class="nav" href="#alerts" data-view="alerts"><svg class="i"><use href="#i-list"/></svg>Cảnh báo</a>
+    <a class="nav" href="#stats" data-view="stats"><svg class="i"><use href="#i-chart"/></svg>Thống kê</a>
+    <a class="nav admin-only" href="#manage" data-view="manage"><svg class="i"><use href="#i-sliders"/></svg>Quản lý</a>
+    <div class="foot">Mở trên thiết bị khác<br><b id="footUrl">-</b></div>
+  </nav>
+
+  <div class="content">
+    <header class="top">
+      <div><h1 id="title">Tổng quan</h1><div class="sub hide-sm" id="clock"></div></div>
+      <div class="spacer"></div>
+      <button id="soundBtn" title="Âm thanh cảnh báo"></button>
+      <button class="hide-sm" onclick="openQR()"><svg class="i"><use href="#i-qr"/></svg>Mở trên điện thoại</button>
+      <button class="icon" id="themeBtn" title="Đổi giao diện sáng/tối"></button>
+      <div class="menu" id="menu">
+        <button class="ghost" onclick="$('menu').classList.toggle('open')"><span class="avatar" id="avatar">?</span><span class="who-name" id="whoName"></span></button>
+        <div class="drop">
+          <div class="who"><b id="menuName"></b><div class="muted" id="menuRole"></div></div>
+          <button onclick="openPassword()"><svg class="i"><use href="#i-key"/></svg>Đổi mật khẩu</button>
+          <button onclick="logout()" class="danger"><svg class="i"><use href="#i-logout"/></svg>Đăng xuất</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- ================= TỔNG QUAN ================= -->
+    <section class="page" id="page-overview">
+      <div class="kpis">
+        <div class="card kpi"><div class="ic t-people"><svg class="i"><use href="#i-school"/></svg></div><div><div class="v" id="kRunning">0</div><div class="l">Lớp đang giám sát</div></div></div>
+        <div class="card kpi" id="kAlarmCard"><div class="ic t-warn"><svg class="i"><use href="#i-alert"/></svg></div><div><div class="v" id="kAlarm">0</div><div class="l">Lớp đang có cảnh báo</div></div></div>
+        <div class="card kpi"><div class="ic t-phone"><svg class="i"><use href="#i-phone"/></svg></div><div><div class="v" id="k-phone">0</div><div class="l">Điện thoại hôm nay</div></div></div>
+        <div class="card kpi"><div class="ic t-head"><svg class="i"><use href="#i-down"/></svg></div><div><div class="v" id="k-head_down">0</div><div class="l">Gục xuống bàn hôm nay</div></div></div>
+        <div class="card kpi"><div class="ic t-sleep"><svg class="i"><use href="#i-moon"/></svg></div><div><div class="v" id="k-sleeping">0</div><div class="l">Ngủ gật hôm nay</div></div></div>
+      </div>
+      <div class="grid-classes" id="grid"></div>
+    </section>
+
+    <!-- ================= 1 LỚP ================= -->
+    <section class="page" id="page-class">
+      <div class="row" style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap">
+        <a class="back" href="#overview"><svg class="i"><use href="#i-back"/></svg>Tất cả lớp</a>
+        <div class="spacer" style="flex:1"></div>
+        <span class="chip"><span class="dot" id="cDot"></span><span id="cSource">-</span></span>
+      </div>
+      <div class="live">
+        <div class="stage" id="stage">
+          <img id="cVideo" alt="Video trực tiếp của lớp">
+          <div class="ov tl"><span class="chip live-badge"><span class="dot"></span>LIVE</span><span class="chip"><span id="cName">-</span></span></div>
+          <div class="ov tr"><span class="chip" id="cFps">0 FPS</span>
+            <button class="icon" onclick="fullscreen()" title="Toàn màn hình (chiếu lên máy chiếu)"><svg class="i"><use href="#i-max"/></svg></button></div>
+          <div class="banner" id="cBanner"><svg class="i"><use href="#i-alert"/></svg><span id="cBannerText"></span></div>
+        </div>
+        <div class="card feed-card">
+          <div class="card-h"><h2>Cảnh báo hôm nay</h2><div class="spacer"></div>
+            <span class="tag c-phone" id="c-phone">0</span><span class="tag c-head_down" id="c-head_down">0</span><span class="tag c-sleeping" id="c-sleeping">0</span></div>
+          <div class="feed" id="cFeed"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= CẢNH BÁO ================= -->
+    <section class="page" id="page-alerts">
+      <div class="card"><div class="card-b">
+        <div class="filters">
+          <div><label>Lớp</label><select id="fClass"></select></div>
+          <div><label>Hành vi</label><select id="fBehavior"><option value="">Tất cả</option><option value="phone">Dùng điện thoại</option><option value="head_down">Gục xuống bàn</option><option value="sleeping">Ngủ gật</option></select></div>
+          <div><label>Từ ngày</label><input type="date" id="fFrom"></div>
+          <div><label>Đến ngày</label><input type="date" id="fTo"></div>
+          <div style="flex-direction:row;gap:8px;min-width:0"><button class="primary" onclick="loadAlerts(1)">Lọc</button>
+            <button onclick="exportCsv()"><svg class="i"><use href="#i-download"/></svg>Tải Excel</button></div>
+        </div>
+      </div></div>
+      <div class="card" style="margin-top:18px"><div class="card-b scroll-x">
+        <table class="history"><thead><tr><th>Ảnh</th><th>Thời gian</th><th>Lớp</th><th>Hành vi</th><th>Học sinh</th><th class="num">Kéo dài</th></tr></thead>
+          <tbody id="aBody"></tbody></table>
+        <div class="pager" id="aPager"></div>
+      </div></div>
+    </section>
+
+    <!-- ================= THỐNG KÊ ================= -->
+    <section class="page" id="page-stats">
+      <div class="filters" style="margin-bottom:18px">
+        <div><label>Khoảng thời gian</label><select id="sDays" onchange="loadStats()"><option value="1">Hôm nay</option><option value="7" selected>7 ngày</option><option value="30">30 ngày</option></select></div>
+        <div><label>Lớp</label><select id="sClass" onchange="loadStats()"></select></div>
+      </div>
+      <div class="stats-grid">
+        <div class="card"><div class="card-h"><h2>Theo ngày</h2><div class="spacer"></div><div class="legend" id="legend1"></div></div>
+          <div class="card-b"><div class="chart" id="chDay"></div><div class="axis" id="axDay"></div></div></div>
+        <div class="card"><div class="card-h"><h2>Tỉ lệ hành vi</h2></div>
+          <div class="card-b donut-wrap"><div class="donut" id="donut"><span><div><b id="donutTotal">0</b>cảnh báo</div></span></div><div class="rows" id="donutRows"></div></div></div>
+      </div>
+      <div class="stats-grid" style="margin-top:18px">
+        <div class="card"><div class="card-h"><h2>Theo giờ trong ngày</h2><div class="spacer"></div><span class="muted">Giờ nào học sinh hay mất tập trung</span></div>
+          <div class="card-b"><div class="chart" id="chHour"></div><div class="axis" id="axHour"></div></div></div>
+        <div class="card"><div class="card-h"><h2>Theo lớp</h2></div><div class="card-b hbars" id="byClass"></div></div>
+      </div>
+    </section>
+
+    <!-- ================= QUẢN LÝ ================= -->
+    <section class="page" id="page-manage">
+      <div class="tabs" id="mTabs">
+        <button data-tab="classes"><svg class="i"><use href="#i-school"/></svg>Lớp học</button>
+        <button data-tab="users"><svg class="i"><use href="#i-users"/></svg>Giáo viên</button>
+        <button data-tab="settings"><svg class="i"><use href="#i-sliders"/></svg>Cài đặt</button>
+      </div>
+
+      <div id="tab-classes" class="card">
+        <div class="card-h"><h2>Lớp học &amp; camera</h2><div class="spacer"></div><button class="primary" onclick="openClassForm()"><svg class="i"><use href="#i-plus"/></svg>Thêm lớp</button></div>
+        <div class="card-b scroll-x"><table><thead><tr><th>Lớp</th><th>Camera</th><th>Trạng thái</th><th>Giáo viên</th><th></th></tr></thead><tbody id="mClasses"></tbody></table></div>
+      </div>
+
+      <div id="tab-users" class="card">
+        <div class="card-h"><h2>Tài khoản</h2><div class="spacer"></div><button class="primary" onclick="openUserForm()"><svg class="i"><use href="#i-plus"/></svg>Thêm giáo viên</button></div>
+        <div class="card-b scroll-x"><table><thead><tr><th>Họ tên</th><th>Tên đăng nhập</th><th>Vai trò</th><th>Lớp được xem</th><th></th></tr></thead><tbody id="mUsers"></tbody></table></div>
+      </div>
+
+      <div id="tab-settings" class="settings">
+        <div class="card">
+          <div class="card-h"><svg class="i"><use href="#i-gauge"/></svg><h2>Độ nhạy</h2></div>
+          <div class="card-b">
+            <div class="field"><label>Ngưỡng gục đầu<small>Cao hơn thì nhạy hơn (dễ báo hơn)</small></label>
+              <input type="range" id="head_down_ratio" min="0.05" max="0.4" step="0.01"><b id="v-head_down_ratio" style="width:36px;text-align:right"></b></div>
+            <div class="field"><label>Dùng điện thoại sau<small>giây</small></label><input type="number" id="phone_seconds" min="0.5" step="0.5"></div>
+            <div class="field"><label>Gục xuống bàn sau<small>giây</small></label><input type="number" id="head_down_seconds" min="1" step="0.5"></div>
+            <div class="field"><label>Coi là ngủ gật sau<small>giây gục đầu liên tục</small></label><input type="number" id="sleeping_seconds" min="2" step="1"></div>
+            <div class="field"><label>Không báo lại cùng học sinh trong<small>giây</small></label><input type="number" id="cooldown" min="0" step="1"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-h"><svg class="i"><use href="#i-cam"/></svg><h2>Hiệu năng</h2></div>
+          <div class="card-b">
+            <div class="field"><label>Chế độ nhìn<small>Cả lớp thì chậm hơn ~3 lần</small></label>
+              <select id="imgsz" style="width:190px"><option value="640">Gần (1–5 học sinh)</option><option value="960">Vừa (nửa lớp)</option><option value="1280">Cả lớp học</option></select></div>
+            <div class="field"><label>Phân tích mỗi lớp<small>khung hình/giây khi không ai xem. Máy yếu, nhiều lớp: giảm xuống</small></label><input type="number" id="fps_background" min="0.2" max="30" step="0.5"></div>
+            <div class="field"><label>Khi đang xem trực tiếp<small>khung hình/giây, cao hơn thì video mượt hơn</small></label><input type="number" id="fps_watch" min="1" max="30" step="1"></div>
+            <div class="field"><label>Lưu ảnh khi cảnh báo</label><label class="switch"><input type="checkbox" id="save_snapshots"><span></span></label></div>
+            <div class="field"><label>Tự xoá dữ liệu cũ hơn<small>ngày</small></label><input type="number" id="keep_days" min="1" step="1"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-h"><svg class="i"><use href="#i-bell"/></svg><h2>Âm thanh</h2></div>
+          <div class="card-b">
+            <div class="field"><label>Loa của máy chủ<small>Máy cài app. Tắt nếu máy chủ đặt ở phòng riêng</small></label>
+              <button class="ghost icon" onclick="post('/api/sound/test', { behavior: 'phone' })" title="Thử"><svg class="i"><use href="#i-play"/></svg></button>
+              <label class="switch"><input type="checkbox" id="server_sound"><span></span></label></div>
+            <div class="field"><label>Thiết bị đang xem trang này<small>Chỉ cảnh báo các lớp bạn được xem</small></label>
+              <label class="switch"><input type="checkbox" id="pageSound"><span></span></label></div>
+            <div class="field"><label>Đọc bằng giọng nói<small>“Lớp 10A1. Có học sinh dùng điện thoại”</small></label>
+              <label class="switch"><input type="checkbox" id="voiceChk"><span></span></label></div>
+            <div class="field" style="flex-wrap:wrap"><label>Nghe thử</label><div class="btns">
+              <button onclick="testVoice('phone')"><svg class="i"><use href="#i-phone"/></svg>Điện thoại</button>
+              <button onclick="testVoice('sleeping')"><svg class="i"><use href="#i-moon"/></svg>Ngủ gật</button>
+              <button onclick="testVoice('head_down')"><svg class="i"><use href="#i-down"/></svg>Gục bàn</button></div></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-h"><svg class="i"><use href="#i-send"/></svg><h2>Thông báo Telegram</h2></div>
+          <div class="card-b">
+            <ol class="steps"><li>Nhắn <b>@BotFather</b> lệnh <code>/newbot</code>, copy token.</li>
+              <li>Mở bot (hoặc thêm bot vào nhóm giáo viên), gửi 1 tin nhắn bất kỳ.</li><li>Dán token, bấm “Tìm chat ID”.</li></ol>
+            <div class="field"><input type="text" id="telegram_token" placeholder="Token bot, ví dụ 123456:ABC..."></div>
+            <div class="field"><input type="text" id="telegram_chat_id" placeholder="Chat ID nhận mọi cảnh báo"><button onclick="findChat('telegram_chat_id', 'tgMsg')">Tìm chat ID</button></div>
+            <div class="hint">Mỗi lớp có thể có chat ID riêng (ví dụ nhóm của giáo viên chủ nhiệm). Đặt trong phần sửa lớp.</div>
+            <div class="btns" style="margin-top:10px"><button onclick="testTelegram()"><svg class="i"><use href="#i-send"/></svg>Gửi thử</button></div>
+            <div class="msg" id="tgMsg"></div>
+          </div>
+        </div>
+        <div class="card" style="grid-column:1 / -1"><div class="card-b" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <button class="primary" onclick="saveSettings()"><svg class="i"><use href="#i-check"/></svg>Lưu cài đặt</button><span class="msg" id="setMsg" style="margin:0"></span>
+        </div></div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- ============ Hộp thoại ============ -->
+<div class="modal" id="classModal"><div class="form">
+  <div class="fh"><h2 id="cfTitle">Thêm lớp</h2><button class="ghost icon" onclick="closeModal('classModal')"><svg class="i"><use href="#i-x"/></svg></button></div>
+  <div class="fb">
+    <div class="row"><label>Tên lớp</label><input type="text" id="cfName" placeholder="Ví dụ: 10A1"></div>
+    <div class="row"><label>Nguồn camera</label>
+      <div class="seg" id="cfType">
+        <button data-type="webcam"><svg class="i"><use href="#i-video"/></svg>Webcam / USB</button>
+        <button data-type="phone"><svg class="i"><use href="#i-phone"/></svg>Điện thoại</button>
+        <button data-type="ip"><svg class="i"><use href="#i-link"/></svg>Camera IP</button>
+        <button data-type="video"><svg class="i"><use href="#i-upload"/></svg>Video có sẵn</button>
+      </div></div>
+    <div class="row" data-for="webcam"><label>Chọn webcam</label><select id="cfWebcam"></select></div>
+    <div class="row" data-for="phone"><div class="hint" id="cfPhoneHint"></div></div>
+    <div class="row" data-for="ip"><label>Địa chỉ camera</label><input type="text" id="cfUrl" placeholder="rtsp://admin:matkhau@192.168.1.64:554/...">
+      <details class="hint" style="margin-top:6px"><summary>Địa chỉ mẫu theo hãng</summary>
+        <p><b>Hikvision</b>: <code>rtsp://admin:matkhau@IP:554/Streaming/Channels/101</code><br>
+           <b>Dahua / KBVision</b>: <code>rtsp://admin:matkhau@IP:554/cam/realmonitor?channel=1&amp;subtype=0</code><br>
+           <b>Imou / Ezviz</b>: bật RTSP trong app, mật khẩu là mã xác minh in dưới camera.<br>
+           App <b>IP Webcam</b> (Android): <code>http://IP:8080/video</code></p></details></div>
+    <div class="row" data-for="video"><label>File video</label><input type="file" id="cfFile" accept="video/*"><div class="hint" id="cfVideoHint"></div></div>
+    <div class="row"><label>Chat ID Telegram riêng của lớp <span class="muted">(không bắt buộc)</span></label>
+      <div style="display:flex;gap:8px"><input type="text" id="cfChat" placeholder="Để trống = dùng chat chung"><button onclick="findChat('cfChat', 'cfMsg')">Tìm</button></div></div>
+    <div class="field" style="border:0;padding:0"><label>Đang giám sát<small>Tắt để tạm dừng lớp này</small></label><label class="switch"><input type="checkbox" id="cfEnabled" checked><span></span></label></div>
+    <div class="msg" id="cfMsg"></div>
+  </div>
+  <div class="ff"><button onclick="closeModal('classModal')">Huỷ</button><button class="primary" id="cfSave" onclick="saveClass()">Lưu</button></div>
+</div></div>
+
+<div class="modal" id="userModal"><div class="form">
+  <div class="fh"><h2 id="ufTitle">Thêm giáo viên</h2><button class="ghost icon" onclick="closeModal('userModal')"><svg class="i"><use href="#i-x"/></svg></button></div>
+  <div class="fb">
+    <div class="row"><label>Họ tên</label><input type="text" id="ufName" placeholder="Ví dụ: Nguyễn Thị Lan"></div>
+    <div class="row"><label>Tên đăng nhập</label><input type="text" id="ufUsername" placeholder="Ví dụ: lan.nt" autocomplete="off"></div>
+    <div class="row"><label id="ufPwLabel">Mật khẩu</label><input type="text" id="ufPassword" autocomplete="off" placeholder="Ít nhất 6 ký tự"></div>
+    <div class="row"><label>Vai trò</label><select id="ufRole"><option value="teacher">Giáo viên: chỉ xem các lớp được chọn</option><option value="admin">Quản trị viên: xem và quản lý tất cả</option></select></div>
+    <div class="row" id="ufClassesRow"><label>Lớp được xem</label><div class="checks" id="ufClasses"></div></div>
+    <div class="msg" id="ufMsg"></div>
+  </div>
+  <div class="ff"><button onclick="closeModal('userModal')">Huỷ</button><button class="primary" onclick="saveUser()">Lưu</button></div>
+</div></div>
+
+<div class="modal" id="pwModal"><div class="form">
+  <div class="fh"><h2>Đổi mật khẩu</h2><button class="ghost icon" onclick="closeModal('pwModal')"><svg class="i"><use href="#i-x"/></svg></button></div>
+  <div class="fb">
+    <div class="row"><label>Mật khẩu hiện tại</label><input type="password" id="pwOld"></div>
+    <div class="row"><label>Mật khẩu mới</label><input type="password" id="pwNew" placeholder="Ít nhất 6 ký tự"></div>
+    <div class="msg" id="pwMsg"></div>
+  </div>
+  <div class="ff"><button onclick="closeModal('pwModal')">Huỷ</button><button class="primary" onclick="changePassword()">Đổi mật khẩu</button></div>
+</div></div>
+
+<div class="modal" id="qrModal" onclick="closeModal('qrModal')">
+  <div class="box" onclick="event.stopPropagation()">
+    <h2 style="margin:0" id="qrTitle">Mở trên điện thoại</h2>
+    <img class="qr" id="qrImg" alt="Mã QR">
+    <p id="qrUrl" style="font-weight:600;margin:0 0 6px;word-break:break-all"></p>
+    <p class="hint" id="qrHint">Điện thoại phải dùng cùng mạng Wi-Fi với máy chủ.</p>
+    <button onclick="closeModal('qrModal')">Đóng</button>
+  </div>
+</div>
+<div class="modal" id="imgModal" onclick="closeModal('imgModal')"><img class="big" id="bigImg" alt="Ảnh chụp lúc cảnh báo"></div>
+<div class="toast" id="toast"><svg class="i"><use href="#i-alert"/></svg><span id="toastText"></span></div>
+
+<script src="/assets/app.js"></script>
+</body>
+</html>

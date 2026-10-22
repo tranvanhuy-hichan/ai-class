@@ -1,0 +1,18 @@
+ultralytics>=8.3
+opencv-python
+pillow
+pyyaml
+lap
+mediapipe
+fastapi
+uvicorn[standard]
+python-multipart
+qrcode
+cryptography
+# Chỉ cần khi tạo lại giọng đọc (scripts/make_voices.py):
+edge-tts
+gTTS
+soundfile
+# Chỉ cần khi tải dữ liệu:
+kagglehub
+roboflow

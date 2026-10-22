@@ -1,0 +1,28 @@
+# Môi trường Python
+.venv/
+.venv-*/
+__pycache__/
+*.pyc
+
+# Kết quả build bộ cài
+build/
+dist/
+
+# Dữ liệu sinh ra khi chạy (nhật ký, ảnh cảnh báo, video tải lên, chứng chỉ, cài đặt)
+appdata/
+logs/
+uploads/
+certs/
+web_settings.json
+
+# Dữ liệu huấn luyện và kết quả huấn luyện (nặng, tải lại bằng scripts/download_datasets.py)
+data/
+runs/
+clips/
+
+# Hệ điều hành / trình soạn thảo
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+yolo11n-cls.pt
