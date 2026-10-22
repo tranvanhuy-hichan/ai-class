@@ -39,6 +39,7 @@ from fastapi import FastAPI, File, HTTPException, Request, UploadFile, WebSocket
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
+from core import cleanup
 from core.camera import PushSource, VideoSource
 from core.display import Drawer, EventLogger, FPSMeter
 from core.pipeline import Pipeline, load_config
@@ -49,6 +50,7 @@ from core.window import open_window, wait_closed
 WEB = res("web")
 SETTINGS_FILE = DATA / "settings.json"
 UPLOADS = DATA / "uploads"
+STORAGE_DEFAULTS = {"save_snapshots": True, "keep_days": 7, "max_storage_mb": 1000}
 # Mã bí mật trong mã QR của điện thoại: chỉ ai quét mã mới gửi hình vào được. Đổi mỗi lần mở app.
 PHONE_KEY = secrets.token_urlsafe(8)
 # Trùng với câu trong file âm thanh (scripts/make_voices.py)
@@ -113,7 +115,8 @@ class Engine:
         self.settings = settings
         self.pipe = Pipeline(cfg)
         self.drawer = Drawer(cfg["output"].get("font", ""))
-        self.logger = EventLogger(DATA / cfg["output"]["log_dir"], cfg["output"]["save_snapshots"])
+        self.logger = EventLogger(DATA / cfg["output"]["log_dir"],
+                                  settings.get("save_snapshots", cfg["output"]["save_snapshots"]))
         self.phone = PushSource()
         self.src = None
         self.source = ""
@@ -225,6 +228,28 @@ class Engine:
         data = self._encode(img)
         with self.frame_lock:
             self.jpeg, self.jpeg_id = data, self.jpeg_id + 1
+
+    # ---------------------------------------------------------- dọn ổ cứng
+    def storage(self):
+        return {**STORAGE_DEFAULTS, **{k: self.settings[k] for k in STORAGE_DEFAULTS if k in self.settings}}
+
+    def clean_storage(self, everything=False):
+        """Xoá ảnh cảnh báo và video tải lên cũ. everything=True: xoá hết ảnh (giữ video đang chạy)."""
+        st = self.storage()
+        days, mb = (0, 0) if everything else (st["keep_days"], st["max_storage_mb"])
+        removed = cleanup.clean([self.logger.snap_dir], days, mb)
+        removed += cleanup.clean([UPLOADS], st["keep_days"], st["max_storage_mb"], protect=[self.source])
+        if removed:
+            print(f"[i] Đã dọn {removed} file cũ")
+        return removed
+
+    def cleanup_loop(self):
+        while True:
+            try:
+                self.clean_storage()
+            except Exception as e:
+                print(f"[!] Lỗi khi dọn ổ cứng: {e}")
+            time.sleep(1800)  # 30 phút dọn 1 lần
 
     # ---------------------------------------------------------- Telegram
     def _telegram(self, ev, snap):
@@ -360,6 +385,13 @@ def create_app(engine, urls):
                 engine.settings[key] = str(body[key]).strip()
         if "server_sound" in body:
             engine.settings["server_sound"] = bool(body["server_sound"])
+        if "save_snapshots" in body:
+            engine.settings["save_snapshots"] = engine.logger.save_snapshots = bool(body["save_snapshots"])
+        if "keep_days" in body:
+            engine.settings["keep_days"] = max(1, int(float(body["keep_days"])))
+        if "max_storage_mb" in body:
+            engine.settings["max_storage_mb"] = max(50, int(float(body["max_storage_mb"])))
+        threading.Thread(target=engine.clean_storage, daemon=True).start()  # áp dụng giới hạn mới ngay
         apply_settings(engine.cfg, engine.settings)
         SETTINGS_FILE.write_text(json.dumps(engine.settings, ensure_ascii=False, indent=2), encoding="utf-8")
         return {"ok": True, "settings": current_settings(engine)}
@@ -389,6 +421,15 @@ def create_app(engine, urls):
         engine._telegram({"text": "Thử thông báo từ hệ thống giám sát lớp học",
                           "time": datetime.now().isoformat(timespec="seconds")}, "")
         return {"ok": True}
+
+    @app.get("/api/storage")
+    def storage():
+        files, mb = cleanup.usage([engine.logger.snap_dir, UPLOADS])
+        return {"files": files, "mb": round(mb, 1), **engine.storage()}
+
+    @app.post("/api/storage/clear")
+    def clear_storage():
+        return {"removed": engine.clean_storage(everything=True)}
 
     @app.post("/api/quit")
     def quit_app():
@@ -432,6 +473,7 @@ def current_settings(engine):
     s["telegram_token"] = engine.settings.get("telegram_token", "")
     s["telegram_chat_id"] = engine.settings.get("telegram_chat_id", "")
     s["server_sound"] = engine.settings.get("server_sound", engine.cfg["output"]["sound"])
+    s.update(engine.storage())
     return s
 
 
@@ -527,6 +569,7 @@ def main():
     settings = load_settings()
     apply_settings(cfg, settings)
     engine = engine_ref = Engine(cfg, settings)
+    threading.Thread(target=engine.cleanup_loop, daemon=True).start()
     if args.source != "none":
         try:
             engine.set_source(args.source)

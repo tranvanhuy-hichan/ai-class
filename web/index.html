@@ -431,6 +431,20 @@
         </div>
 
         <div class="card">
+          <div class="card-h"><svg class="i"><use href="#i-download"/></svg><h2>Lưu trữ</h2><div class="spacer"></div><span class="chip" id="usage">-</span></div>
+          <div class="card-b">
+            <div class="field"><label>Lưu ảnh khi có cảnh báo<small>Để xem lại trong lịch sử. Tắt thì không lưu ảnh nào</small></label>
+              <label class="switch"><input type="checkbox" id="save_snapshots"><span></span></label></div>
+            <div class="field"><label>Tự xoá ảnh cũ hơn<small>ngày</small></label><input type="number" id="keep_days" min="1" step="1"></div>
+            <div class="field"><label>Dung lượng tối đa<small>MB. Vượt mức thì tự xoá ảnh cũ nhất trước</small></label><input type="number" id="max_storage_mb" min="50" step="50"></div>
+            <div class="btns" style="margin-top:8px"><button class="primary" onclick="saveSettings('storeMsg')"><svg class="i"><use href="#i-check"/></svg>Lưu</button>
+              <button class="danger" onclick="clearStorage()"><svg class="i"><use href="#i-alert"/></svg>Xoá hết ảnh</button></div>
+            <div class="hint" style="margin-top:8px">App tự dọn 30 phút một lần, gồm cả video demo đã tải lên. Nhật ký Excel (.csv) không bị xoá.</div>
+            <div class="msg" id="storeMsg"></div>
+          </div>
+        </div>
+
+        <div class="card">
           <div class="card-h"><svg class="i"><use href="#i-send"/></svg><h2>Thông báo Telegram</h2></div>
           <div class="card-b">
             <ol class="steps"><li>Trên Telegram, nhắn cho <b>@BotFather</b> lệnh <code>/newbot</code> và copy token.</li>
@@ -613,7 +627,7 @@ function addEvent(e) {
   if (feed.querySelector(".empty")) feed.innerHTML = "";
   const div = document.createElement("div");
   div.className = "ev c-" + e.behavior;
-  div.innerHTML = `${e.snapshot ? `<img src="${e.snapshot}" alt="" onclick="zoom('${e.snapshot}')">` : ""}
+  div.innerHTML = `${e.snapshot ? `<img src="${e.snapshot}" alt="" onerror="this.style.visibility='hidden'" onclick="zoom('${e.snapshot}')">` : ""}
     <div style="min-width:0"><span class="tag">${icon(ICON[e.behavior], 12)}${e.name}</span>
     <div class="who" style="margin-top:6px">Học sinh #${e.student} <span class="meta">· ${Math.round(e.duration)} giây</span></div>
     <div class="meta">${e.time.slice(11)} · ${e.time.slice(8, 10)}/${e.time.slice(5, 7)}</div></div>`;
@@ -653,17 +667,19 @@ async function loadStats() {
   }).join("") : `<tr><td colspan="3" class="muted" style="text-align:center;padding:30px">Chưa có cảnh báo</td></tr>`;
 
   $("historyBody").innerHTML = allEvents.length ? allEvents.slice(-50).reverse().map(e =>
-    `<tr><td>${e.snapshot ? `<img src="${e.snapshot}" alt="" onclick="zoom('${e.snapshot}')">` : ""}</td><td>${e.time.slice(11)}</td>
+    `<tr><td>${e.snapshot ? `<img src="${e.snapshot}" alt="" onerror="this.style.visibility='hidden'" onclick="zoom('${e.snapshot}')">` : ""}</td><td>${e.time.slice(11)}</td>
      <td><b>#${e.student}</b></td><td><span class="tag c-${e.behavior}">${icon(ICON[e.behavior], 12)}${SHORT[e.behavior]}</span></td><td class="num">${Math.round(e.duration)}s</td></tr>`).join("")
     : `<tr><td colspan="5" class="muted" style="text-align:center;padding:30px">Chưa có cảnh báo</td></tr>`;
 }
 
 // ---------- cài đặt
-const SETTING_KEYS = ["head_down_ratio", "phone_seconds", "head_down_seconds", "sleeping_seconds", "cooldown", "imgsz", "telegram_token", "telegram_chat_id"];
+const SETTING_KEYS = ["head_down_ratio", "phone_seconds", "head_down_seconds", "sleeping_seconds", "cooldown", "imgsz", "telegram_token", "telegram_chat_id", "keep_days", "max_storage_mb"];
 async function loadInfo() {
   info = await api("/api/info");
   const s = info.settings;
   for (const k of SETTING_KEYS) $(k).value = s[k];
+  $("save_snapshots").checked = s.save_snapshots;
+  loadUsage();
   $("v-head_down_ratio").textContent = s.head_down_ratio;
   $("server_sound").checked = s.server_sound;
   $("pageSound").checked = sound;
@@ -696,6 +712,7 @@ async function uploadVideo() {
 async function saveSettings(msgId = "setMsg") {
   const body = {};
   for (const k of SETTING_KEYS) body[k] = $(k).value;
+  body.save_snapshots = $("save_snapshots").checked;
   try { await post("/api/settings", body); msg(msgId, "✔ Đã lưu, áp dụng ngay", true); }
   catch (e) { msg(msgId, e.message); }
 }
@@ -708,6 +725,15 @@ async function testTelegram() {
   await saveSettings("tgMsg");
   try { await post("/api/telegram/test", {}); msg("tgMsg", "✔ Đã gửi, kiểm tra Telegram nhé", true); }
   catch (e) { msg("tgMsg", e.message); }
+}
+async function loadUsage() {
+  const u = await api("/api/storage").catch(() => null);
+  if (u) $("usage").textContent = `${u.files} file · ${u.mb} MB`;
+}
+async function clearStorage() {
+  if (!confirm("Xoá hết ảnh cảnh báo đã lưu? Nhật ký Excel vẫn được giữ.")) return;
+  try { const r = await post("/api/storage/clear", {}); msg("storeMsg", `✔ Đã xoá ${r.removed} file`, true); loadUsage(); }
+  catch (e) { msg("storeMsg", e.message); }
 }
 async function quitApp() {
   if (!confirm("Tắt hẳn ứng dụng? Hệ thống sẽ ngừng giám sát.")) return;
