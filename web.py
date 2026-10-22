@@ -23,21 +23,27 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from urllib.parse import urlparse
 
-import cv2
-import numpy as np
-import requests
-import uvicorn
+from core.paths import DATA, FROZEN, res
+
+if FROZEN:
+    # App đã cài không có cửa sổ dòng lệnh (sys.stdout = None trên Windows). Phải chuyển thông tin
+    # ra file TRƯỚC khi nạp thư viện AI, vì chúng in thông tin ngay lúc được nạp.
+    _log = open(DATA / "app.log", "a", buffering=1, encoding="utf-8")
+    sys.stdout = sys.stderr = _log
+
+import cv2  # noqa: E402
+import numpy as np  # noqa: E402
+import requests  # noqa: E402
+import uvicorn  # noqa: E402
 from fastapi import FastAPI, File, HTTPException, Request, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
 from core.camera import PushSource, VideoSource
 from core.display import Drawer, EventLogger, FPSMeter
-from core.paths import DATA, res
 from core.pipeline import Pipeline, load_config
 from core.rules import BEHAVIOR_NAMES
 from core.sound import play_alert
-from core.paths import FROZEN
 from core.window import open_window, wait_closed
 
 WEB = res("web")
@@ -499,9 +505,7 @@ def already_running(port):
 
 def main():
     global engine_ref
-    if FROZEN:  # app đã cài: không có cửa sổ dòng lệnh, ghi thông tin ra file
-        log = open(DATA / "app.log", "a", buffering=1, encoding="utf-8")
-        sys.stdout = sys.stderr = log
+    if FROZEN:
         print(f"\n===== Mở app lúc {datetime.now():%Y-%m-%d %H:%M:%S} =====")
     ap = argparse.ArgumentParser(description="Web cảnh báo hành vi lớp học")
     ap.add_argument("--source", default="0", help='Nguồn ban đầu: "0" webcam, link camera, file video, "none"')

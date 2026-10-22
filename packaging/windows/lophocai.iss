@@ -1,4 +1,4 @@
-; Bộ cài Windows (Inno Setup 6). Chạy sau khi đã có dist\LopHocAI từ PyInstaller:
+﻿; Bộ cài Windows (Inno Setup 6). Chạy sau khi đã có dist\LopHocAI từ PyInstaller:
 ;   iscc /DAppVersion=1.0.0 packaging\windows\lophocai.iss
 ; Kết quả: dist\LopHocAI-Setup-<phiên bản>.exe
 
