@@ -15,9 +15,9 @@ import json
 import secrets
 import shutil
 import socket
+import sys
 import threading
 import time
-import webbrowser
 from collections import Counter, deque
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -37,6 +37,8 @@ from core.paths import DATA, res
 from core.pipeline import Pipeline, load_config
 from core.rules import BEHAVIOR_NAMES
 from core.sound import play_alert
+from core.paths import FROZEN
+from core.window import open_window, wait_closed
 
 WEB = res("web")
 SETTINGS_FILE = DATA / "settings.json"
@@ -382,6 +384,12 @@ def create_app(engine, urls):
                           "time": datetime.now().isoformat(timespec="seconds")}, "")
         return {"ok": True}
 
+    @app.post("/api/quit")
+    def quit_app():
+        """Nút "Tắt ứng dụng" trên giao diện."""
+        threading.Timer(0.5, request_exit).start()
+        return {"ok": True}
+
     @app.get("/api/events.csv")
     def events_csv():
         return FileResponse(engine.logger.path, filename="canh_bao.csv", media_type="text/csv")
@@ -473,17 +481,43 @@ def make_cert(ip):
 
 
 engine_ref = None
+servers = []
+
+
+def request_exit():
+    for s in servers:
+        s.should_exit = True
+
+
+def already_running(port):
+    """App đã mở rồi (vd bấm biểu tượng lần 2)?"""
+    try:
+        return requests.get(f"http://127.0.0.1:{port}/api/status", timeout=1).ok
+    except requests.RequestException:
+        return False
 
 
 def main():
     global engine_ref
+    if FROZEN:  # app đã cài: không có cửa sổ dòng lệnh, ghi thông tin ra file
+        log = open(DATA / "app.log", "a", buffering=1, encoding="utf-8")
+        sys.stdout = sys.stderr = log
+        print(f"\n===== Mở app lúc {datetime.now():%Y-%m-%d %H:%M:%S} =====")
     ap = argparse.ArgumentParser(description="Web cảnh báo hành vi lớp học")
     ap.add_argument("--source", default="0", help='Nguồn ban đầu: "0" webcam, link camera, file video, "none"')
     ap.add_argument("--config", default="config.yaml")
     ap.add_argument("--port", type=int, default=8000)
     ap.add_argument("--https-port", type=int, default=8443)
-    ap.add_argument("--no-browser", action="store_true")
+    ap.add_argument("--no-browser", action="store_true", help="Không mở cửa sổ giao diện (chạy nền)")
     args = ap.parse_args()
+
+    if already_running(args.port):  # chỉ mở lại cửa sổ, không chạy thêm bản thứ 2
+        if not args.no_browser:
+            proc = open_window(f"http://localhost:{args.port}")
+            print("App đang chạy sẵn, đã mở lại cửa sổ.")
+            if proc:
+                proc.wait()
+        return
 
     cfg = load_config(args.config)
     settings = load_settings()
@@ -505,7 +539,7 @@ def main():
     # điện thoại gửi hình (đã chặn mọi trang khác bằng only_this_computer).
     # Luồng video trực tiếp không bao giờ tự đóng, nên khi tắt chỉ chờ 2 giây rồi tắt hẳn.
     opts = dict(log_level="warning", timeout_graceful_shutdown=2)
-    servers = [uvicorn.Server(uvicorn.Config(app, host="127.0.0.1", port=args.port, **opts))]
+    servers.append(uvicorn.Server(uvicorn.Config(app, host="127.0.0.1", port=args.port, **opts)))
     if cert:
         servers.append(uvicorn.Server(uvicorn.Config(app, host="0.0.0.0", port=args.https_port,
                                                      ssl_keyfile=cert[0], ssl_certfile=cert[1], **opts)))
@@ -513,10 +547,17 @@ def main():
     print(" HỆ THỐNG CẢNH BÁO HÀNH VI LỚP HỌC ĐANG CHẠY")
     print(f"   Mở trên máy này: {urls['local']}")
     print(f"   Dữ liệu lưu ở:   {DATA}")
-    print(" ĐỪNG TẮT CỬA SỔ NÀY khi đang dùng. Nhấn Ctrl+C để tắt.")
+    print(" Đóng cửa sổ app (hoặc nhấn Ctrl+C) để tắt.")
     print("=" * 60 + "\n")
     if not args.no_browser:
-        threading.Timer(1.5, webbrowser.open, args=(urls["local"],)).start()
+        def window():
+            # Đóng cửa sổ app = tắt app (nếu theo dõi được cửa sổ)
+            time.sleep(1.0)
+            proc = open_window(urls["local"])
+            if proc and wait_closed(proc):
+                print("Cửa sổ đã đóng -> tắt app.")
+                request_exit()
+        threading.Thread(target=window, daemon=True).start()
 
     async def serve():
         # Ctrl+C chỉ báo cho 1 server, nên khi 1 cái dừng thì dừng luôn cái còn lại

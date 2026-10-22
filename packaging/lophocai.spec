@@ -41,7 +41,7 @@ exe = EXE(  # noqa: F821
     [],
     exclude_binaries=True,
     name="LopHocAI",
-    console=True,  # cửa sổ dòng lệnh hiện địa chỉ trang web, đóng cửa sổ = tắt app
+    console=False,  # không hiện cửa sổ dòng lệnh; giao diện mở thành cửa sổ app, thông tin ghi vào app.log
     icon=str(ROOT / "packaging" / ("icon.ico" if sys.platform == "win32" else "icon.png")),
 )
 coll = COLLECT(exe, a.binaries, a.datas, name="LopHocAI")  # noqa: F821

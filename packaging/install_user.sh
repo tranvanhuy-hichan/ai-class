@@ -28,7 +28,8 @@ Name=Lớp học AI
 Comment=Cảnh báo hành vi bất thường của học sinh trong lớp học
 Exec=$APP/LopHocAI
 Icon=lophocai
-Terminal=true
+Terminal=false
+StartupWMClass=LopHocAI
 Categories=Education;
 EOF
 update-desktop-database "$(dirname "$DESKTOP")" 2>/dev/null || true
