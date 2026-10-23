@@ -57,6 +57,7 @@ Từ lần sau chỉ mất vài giây. Khi Windows hỏi tường lửa, chọn 
 | Dùng camera của trường (Hikvision, Dahua, Imou...) | **⚙ Cài đặt**, dán link `rtsp://...`, bấm **Kết nối** (trang có sẵn địa chỉ mẫu). Máy phải cùng mạng với camera |
 | Demo bằng video có sẵn | **⚙ Cài đặt → Video có sẵn → Tải lên & chạy** (video tự phát lặp lại) |
 | Nhận cảnh báo qua Telegram | **⚙ Cài đặt → Thông báo Telegram**, làm theo 3 bước trên trang |
+| Xem lớp đang tập trung đến đâu | Thẻ **Mức độ tập trung** cạnh video: số 0–100 theo thời gian thực, trung bình, phút thấp nhất và biểu đồ theo từng phút (30 phút đến cả ngày). Điểm trung bình từng phút được lưu ở `logs/focus.csv` |
 | Hình bị ngược trái-phải, camera đặt nghiêng, phòng tối | Trên video bấm nút **⇄ Lật ngang**, hoặc nút chỉnh hình bên cạnh để **lật dọc, xoay 90°/180°, tăng độ sáng, phóng to giữa khung**. Nhớ riêng cho từng camera, áp dụng ngay |
 | Chỉnh độ nhạy | **⚙ Cài đặt → Độ nhạy**, có tác dụng ngay |
 | Lấy số liệu cho báo cáo | **Thống kê → Tải nhật ký** (mở bằng Excel) |
@@ -65,6 +66,15 @@ Màu khung: 🟩 bình thường · 🟧 có dấu hiệu nhưng chưa đủ lâ
 
 > Bản nền tảng nhiều lớp, có tài khoản giáo viên và lãnh đạo, đang được cất trong
 > [_luu_tru/nen_tang_nhieu_lop/](_luu_tru/nen_tang_nhieu_lop/) và chưa hoàn thiện.
+
+### Chỉ số tập trung
+
+Mỗi khung hình, từng học sinh được chấm **100%** khi bình thường, **50%** khi có dấu hiệu nhưng chưa đủ lâu để
+cảnh báo (vd mới cúi đầu 1–2 giây), **0%** khi đang bị cảnh báo. Điểm của lớp là trung bình các học sinh trong
+khung hình, làm mượt khoảng 5 giây. Từ 80 trở lên là "Tập trung tốt", 55–79 "Trung bình", dưới 55 "Dễ mất tập trung".
+
+> **Đây là chỉ số tham khảo** do nhóm tự đặt công thức, chưa được kiểm chứng với đánh giá của giáo viên. Khi trình bày
+> nên nói rõ điều này. Muốn kiểm chứng: nhờ giáo viên chấm mức tập trung của các đoạn video mẫu rồi so với điểm của hệ thống.
 
 ### Âm thanh cảnh báo
 

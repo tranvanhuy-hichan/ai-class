@@ -246,6 +246,30 @@
   .vpanel .vsl small { display: none; }
   .vpanel input[type=range] { width: 100%; }
   @media (max-width: 820px) { .vpanel { left: 14px; right: 14px; width: auto; } }
+  /* Chỉ số tập trung (thẻ gọn bên phải video) */
+  .rcol { display: flex; flex-direction: column; gap: 14px; height: calc(100vh - 290px); min-height: 460px; }
+  .rcol .feed-card { height: auto; flex: 1; min-height: 0; }
+  .focus-card select { width: auto; padding: 4px 8px; font-size: 12.5px; }
+  .focus-card .card-h { padding-bottom: 0; }
+  .info { width: 18px; height: 18px; border-radius: 50%; display: inline-grid; place-items: center; font-size: 11px; font-weight: 700;
+          color: var(--muted); border: 1px solid var(--border); cursor: help; }
+  .focus-body { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 4px 18px; align-items: center; padding-top: 10px; }
+  .fring { --p: 0; --c: var(--surface-3); width: 112px; height: 112px; border-radius: 50%; position: relative; display: grid; place-items: center;
+           background: conic-gradient(var(--c) calc(var(--p) * 1%), var(--surface-3) 0); transition: background .6s; }
+  .fring::after { content: ""; position: absolute; inset: 11px; border-radius: 50%; background: var(--surface); }
+  .fring .fin { position: relative; z-index: 1; text-align: center; line-height: 1.15; }
+  .fring .fin b { display: block; font-size: 30px; font-variant-numeric: tabular-nums; letter-spacing: -.02em; color: var(--c); }
+  .fring .fin span { font-size: 10.5px; color: var(--muted); display: block; max-width: 70px; }
+  .fstats { display: flex; flex-direction: column; gap: 10px; }
+  .fstats b { display: block; font-size: 20px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .fstats span { font-size: 12px; color: var(--muted); }
+  .fchart { grid-column: 1 / -1; margin-top: 8px; }
+  .fchart .chart { gap: 1px; height: 64px; padding-top: 0; }
+  .fchart .bar { min-width: 0; }
+  .fchart .bar div { border-radius: 2px 2px 0 0; }
+  .fchart .axis { font-size: 11px; }
+  @media (max-width: 820px) { .ov.tr .chip { display: none; } }
+  @media (max-width: 1024px) { .rcol { height: auto; } .rcol .feed-card { height: 460px; flex: none; } }
 </style>
 </head>
 <body>
@@ -332,10 +356,27 @@
           <div class="banner" id="banner"><svg class="i"><use href="#i-alert"/></svg><span id="bannerText"></span></div>
         </div>
 
-        <div class="card feed-card">
-          <div class="card-h"><h2>Cảnh báo gần đây</h2><div class="spacer"></div><span class="chip" id="feedCount">0</span></div>
-          <div class="feed" id="feed">
-            <div class="empty"><div class="big"><svg class="i"><use href="#i-check"/></svg></div>Chưa có cảnh báo nào<br><span class="hint">Lớp học đang trật tự</span></div>
+        <div class="rcol">
+          <div class="card focus-card" id="focusCard">
+            <div class="card-h"><svg class="i"><use href="#i-gauge"/></svg><h2>Mức độ tập trung</h2>
+              <span class="info" title="Chỉ số tham khảo: mỗi học sinh được chấm 100% khi bình thường, 50% khi có dấu hiệu chưa đủ lâu để cảnh báo, 0% khi đang bị cảnh báo. Điểm của lớp là trung bình các bạn trong khung hình. Chưa được kiểm chứng với đánh giá của giáo viên.">?</span>
+              <div class="spacer"></div>
+              <select id="fcRange" onchange="loadFocus()">
+                <option value="30">30 phút</option><option value="60" selected>1 giờ</option><option value="180">3 giờ</option><option value="480">8 giờ</option><option value="1440">Cả ngày</option></select></div>
+            <div class="card-b focus-body">
+              <div class="fring" id="fRing"><div class="fin"><b id="fNow">–</b><span id="fLabel">Chưa có dữ liệu</span></div></div>
+              <div class="fstats">
+                <div><b id="fAvg">–</b><span>Trung bình</span></div>
+                <div><b id="fLow">–</b><span id="fLowT">Thấp nhất</span></div>
+              </div>
+              <div class="fchart"><div class="chart" id="fChart"></div><div class="axis" id="fAxis"></div></div>
+            </div>
+          </div>
+          <div class="card feed-card">
+            <div class="card-h"><h2>Cảnh báo gần đây</h2><div class="spacer"></div><span class="chip" id="feedCount">0</span></div>
+            <div class="feed" id="feed">
+              <div class="empty"><div class="big"><svg class="i"><use href="#i-check"/></svg></div>Chưa có cảnh báo nào<br><span class="hint">Lớp học đang trật tự</span></div>
+            </div>
           </div>
         </div>
       </div>
@@ -344,33 +385,33 @@
     <!-- ================= THỐNG KÊ ================= -->
     <section class="page" id="page-stats">
       <div class="stats-grid">
-        <div class="card">
-          <div class="card-h"><h2>Cảnh báo theo phút</h2><div class="spacer"></div>
-            <div class="legend"><span><i style="background:var(--phone)"></i>Điện thoại</span><span><i style="background:var(--head)"></i>Gục đầu</span><span><i style="background:var(--sleep)"></i>Ngủ gục</span></div></div>
-          <div class="card-b"><div class="chart" id="chart"></div><div class="axis" id="axis"></div></div>
-        </div>
-        <div class="card">
-          <div class="card-h"><h2>Tỉ lệ hành vi</h2></div>
-          <div class="card-b donut-wrap">
-            <div class="donut" id="donut"><span><div><b id="donutTotal">0</b>cảnh báo</div></span></div>
-            <div class="rows" id="donutRows"></div>
+          <div class="card">
+            <div class="card-h"><h2>Cảnh báo theo phút</h2><div class="spacer"></div>
+              <div class="legend"><span><i style="background:var(--phone)"></i>Điện thoại</span><span><i style="background:var(--head)"></i>Gục đầu</span><span><i style="background:var(--sleep)"></i>Ngủ gục</span></div></div>
+            <div class="card-b"><div class="chart" id="chart"></div><div class="axis" id="axis"></div></div>
           </div>
-        </div>
+          <div class="card">
+            <div class="card-h"><h2>Tỉ lệ hành vi</h2></div>
+            <div class="card-b donut-wrap">
+              <div class="donut" id="donut"><span><div><b id="donutTotal">0</b>cảnh báo</div></span></div>
+              <div class="rows" id="donutRows"></div>
+            </div>
+          </div>
       </div>
 
       <div class="stats-grid" style="margin-top:18px">
-        <div class="card">
-          <div class="card-h"><h2>Lịch sử cảnh báo</h2><div class="spacer"></div>
-            <a class="btn" href="/api/events.csv"><svg class="i"><use href="#i-download"/></svg>Tải nhật ký Excel</a></div>
-          <div class="card-b scroll-x"><table class="history"><thead><tr><th>Ảnh</th><th>Thời gian</th><th>Học sinh</th><th>Hành vi</th><th class="num">Kéo dài</th></tr></thead>
-            <tbody id="historyBody"><tr><td colspan="5" class="muted" style="text-align:center;padding:30px">Chưa có cảnh báo</td></tr></tbody></table></div>
+          <div class="card">
+            <div class="card-h"><h2>Lịch sử cảnh báo</h2><div class="spacer"></div>
+              <a class="btn" href="/api/events.csv"><svg class="i"><use href="#i-download"/></svg>Tải nhật ký Excel</a></div>
+            <div class="card-b scroll-x"><table class="history"><thead><tr><th>Ảnh</th><th>Thời gian</th><th>Học sinh</th><th>Hành vi</th><th class="num">Kéo dài</th></tr></thead>
+              <tbody id="historyBody"><tr><td colspan="5" class="muted" style="text-align:center;padding:30px">Chưa có cảnh báo</td></tr></tbody></table></div>
+          </div>
+          <div class="card">
+            <div class="card-h"><h2>Học sinh cần chú ý</h2></div>
+            <div class="card-b scroll-x"><table><thead><tr><th>Học sinh</th><th>Phân bố</th><th class="num">Tổng</th></tr></thead>
+              <tbody id="topBody"><tr><td colspan="3" class="muted" style="text-align:center;padding:30px">Chưa có cảnh báo</td></tr></tbody></table></div>
+          </div>
         </div>
-        <div class="card">
-          <div class="card-h"><h2>Học sinh cần chú ý</h2></div>
-          <div class="card-b scroll-x"><table><thead><tr><th>Học sinh</th><th>Phân bố</th><th class="num">Tổng</th></tr></thead>
-            <tbody id="topBody"><tr><td colspan="3" class="muted" style="text-align:center;padding:30px">Chưa có cảnh báo</td></tr></tbody></table></div>
-        </div>
-      </div>
     </section>
 
     <!-- ================= CÀI ĐẶT ================= -->
@@ -627,6 +668,30 @@ function toast(text) {
 
 // ---------- cập nhật trạng thái mỗi giây
 function viewBusy_pending() { return document.activeElement === $("vBr") || document.activeElement === $("vZm"); }
+// ------------------------------------------------------------------ chỉ số tập trung
+const fColor = v => v >= 80 ? "var(--ok)" : v >= 55 ? "var(--head)" : "var(--bad)";
+const fLabel = v => v == null ? "Chưa có dữ liệu" : v >= 80 ? "Tập trung tốt" : v >= 55 ? "Trung bình" : "Dễ mất tập trung";
+function renderFocusNow(v) {
+  const ring = $("fRing");
+  ring.style.setProperty("--p", v == null ? 0 : v);
+  ring.style.setProperty("--c", v == null ? "var(--surface-3)" : fColor(v));
+  $("fNow").textContent = v == null ? "–" : v;
+  $("fLabel").textContent = fLabel(v);
+}
+async function loadFocus() {
+  const d = await api("/api/focus?minutes=" + $("fcRange").value).catch(() => null);
+  if (!d) return;
+  $("fAvg").textContent = d.avg == null ? "–" : d.avg + "%";
+  $("fLow").textContent = d.low ? Math.round(d.low.score) + "%" : "–";
+  $("fLowT").textContent = d.low ? "Thấp nhất lúc " + d.low.label : "Thấp nhất";
+  $("fChart").innerHTML = d.points.map(p => p.score == null
+    ? `<div class="bar" data-tip="${p.label}: không có học sinh"><div class="stub"></div></div>`
+    : `<div class="bar" data-tip="${p.label}: ${Math.round(p.score)}% (${p.students} học sinh)"><div style="height:${Math.max(p.score, 3)}%;background:${fColor(p.score)}"></div></div>`).join("");
+  const n = d.points.length;
+  $("fAxis").innerHTML = [0, .25, .5, .75, 1].map(f => `<span>${d.points[Math.min(n - 1, Math.round(f * (n - 1)))].label}</span>`).join("");
+}
+setInterval(() => { if (!document.hidden && $("page-live").classList.contains("active")) loadFocus(); }, 10000);
+
 // ------------------------------------------------------------------ chỉnh hình camera
 let view = { flip_h: false, flip_v: false, rotate: 0, brightness: 0, zoom: 1 }, viewBusy = 0;
 function renderView() {
@@ -656,6 +721,7 @@ async function poll() {
     $("srcName").textContent = src; $("ovSrc").textContent = src; $("curSrc").textContent = src;
     $("fps").textContent = s.fps + " FPS";
     $("ovPeople").textContent = s.people;
+    renderFocusNow(s.focus);
     if (s.view && !viewBusy_pending()) { view = s.view; renderView(); }
     $("dot").className = "dot " + (s.warning ? "alarm" : s.source ? "on" : "");
     $("sPeople").textContent = s.people;
@@ -803,7 +869,7 @@ async function openQR() {
   $("qrModal").classList.add("open");
 }
 
-renderTheme(); renderSoundBtn(); route(); poll();
+renderTheme(); renderSoundBtn(); route(); poll(); loadFocus();
 api("/api/info").then(i => { info = i; }).catch(() => {});
 setInterval(poll, 1000);
 setInterval(() => { if ($("page-stats").classList.contains("active")) loadStats(); }, 10000);

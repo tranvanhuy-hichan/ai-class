@@ -41,6 +41,7 @@ from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 from core import cleanup
+from core.focus import FocusTracker, label as focus_label
 from core.camera import PushSource, VideoSource
 from core.display import Drawer, EventLogger, FPSMeter
 from core.pipeline import Pipeline, load_config
@@ -157,6 +158,7 @@ class Engine:
         self.logger = EventLogger(DATA / cfg["output"]["log_dir"],
                                   settings.get("save_snapshots", cfg["output"]["save_snapshots"]))
         self.phone = PushSource()
+        self.focus = FocusTracker(DATA / cfg["output"]["log_dir"] / "focus.csv")
         self.src = None
         self.view = dict(DEFAULT_VIEW)
         self.source = ""
@@ -169,7 +171,7 @@ class Engine:
         self.jpeg_id = 0
         self.events = deque(maxlen=500)
         self.event_id = 0
-        self.status = {"people": 0, "warning": 0, "fps": 0.0, "active": [], "announcements": []}
+        self.status = {"focus": None, "people": 0, "warning": 0, "fps": 0.0, "active": [], "announcements": []}
         self.error = ""
 
     @staticmethod
@@ -262,7 +264,9 @@ class Engine:
                 for b in dict.fromkeys(a["behavior"] for a in alerts):  # mỗi hành vi đọc 1 lần
                     play_alert(b)
 
+            focus = self.focus.update(people)
             self.status = {
+                "focus": None if focus is None else round(focus),
                 "people": len(people),
                 "warning": sum(1 for p in people if p["active"]),
                 "fps": round(fps_meter.fps or 0, 1),
@@ -383,6 +387,10 @@ def create_app(engine, urls):
             "events": [e for e in engine.events if e["id"] > after][-50:],
             "counts": {b: engine.logger.counts.get(b, 0) for b in BEHAVIOR_NAMES},
         }
+
+    @app.get("/api/focus")
+    def focus(minutes: int = 60):
+        return engine.focus.summary(max(5, min(minutes, 24 * 60)))
 
     @app.get("/api/stats")
     def stats(minutes: int = 30):
@@ -677,6 +685,7 @@ def main():
         asyncio.run(serve())
     finally:
         engine.stop()
+        engine.focus.close()
         engine.logger.close()
 
 
