@@ -42,8 +42,20 @@ class Drawer:
         d.text(((img.width - r) // 2, (img.height - b) // 2), text, font=self.font, fill=color)
         return cv2.cvtColor(np.asarray(img), cv2.COLOR_RGB2BGR)
 
-    def draw(self, frame, people, fps=None):
-        texts = []
+    def _pill(self, d, x, y, text, dot):
+        """Nhãn kiểu "viên thuốc": nền tối nửa trong suốt, bo tròn, chấm màu bên trái."""
+        l, t, r, b = d.textbbox((0, 0), text, font=self.font)
+        h = b + 10
+        w = r + h + 6
+        d.rounded_rectangle((x, y, x + w, y + h), radius=h // 2, fill=(11, 15, 23, 185))
+        cy, rd = y + h / 2, max(3, h // 6)
+        d.ellipse((x + h / 2 - rd, cy - rd, x + h / 2 + rd, cy + rd), fill=dot)
+        d.text((x + h, y + 4), text, font=self.font, fill=(255, 255, 255, 255))
+        return h
+
+    def draw(self, frame, people, fps=None, header=True):
+        """Vẽ khung + nhãn từng học sinh. header=False khi giao diện đã hiện số liệu riêng (bản web)."""
+        labels = []
         warn = 0
         for p in people:
             x0, y0, x1, y1 = map(int, p["box"])
@@ -59,20 +71,20 @@ class Drawer:
                 cv2.rectangle(frame, tuple(map(int, b[:2])), tuple(map(int, b[2:])), (255, 0, 255), 2)
             label = f"#{p['id']}"
             if active:
-                label += " " + ", ".join(f"{BEHAVIOR_NAMES[b]} {d:.0f}s" for b, d in active.items())
-            texts.append(((x0, max(y0 - 24, 0)), label, color))
+                label += "  " + ", ".join(f"{BEHAVIOR_NAMES[b]} {d:.0f}s" for b, d in active.items())
+            labels.append((x0, y0, label, color))
 
-        header = f"Học sinh: {len(people)} | Cảnh báo: {warn}"
-        if fps:
-            header += f" | {fps:.1f} FPS"
-        texts.append(((10, 8), header, RED if warn else GREEN))
-
-        img = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
-        d = ImageDraw.Draw(img)
-        for (x, y), text, color in texts:
-            l, t, r, b = d.textbbox((x, y), text, font=self.font)
-            d.rectangle((l - 3, t - 3, r + 3, b + 3), fill=color[::-1])
-            d.text((x, y), text, font=self.font, fill=(255, 255, 255))
+        img = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)).convert("RGBA")
+        layer = Image.new("RGBA", img.size, (0, 0, 0, 0))
+        d = ImageDraw.Draw(layer)
+        for x0, y0, text, color in labels:
+            h = d.textbbox((0, 0), text, font=self.font)[3] + 10
+            y = y0 - h - 4 if y0 - h - 4 >= 0 else y0 + 4  # sát trên khung, hết chỗ thì vào trong
+            self._pill(d, max(x0, 0), y, text, color[::-1] + (255,))
+        if header:
+            text = f"Học sinh: {len(people)}  ·  Cảnh báo: {warn}" + (f"  ·  {fps:.1f} FPS" if fps else "")
+            self._pill(d, 10, 10, text, (RED if warn else GREEN)[::-1] + (255,))
+        img = Image.alpha_composite(img, layer).convert("RGB")
         return cv2.cvtColor(np.asarray(img), cv2.COLOR_RGB2BGR)
 
 

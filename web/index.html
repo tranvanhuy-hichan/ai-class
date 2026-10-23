@@ -298,7 +298,7 @@
         <div class="stage" id="stage">
           <img src="/video" alt="Video trực tiếp từ camera lớp học">
           <div class="ov tl"><span class="chip live-badge"><span class="dot"></span>LIVE</span><span class="chip"><span id="ovSrc">-</span></span></div>
-          <div class="ov tr"><span class="chip" id="fps">0 FPS</span>
+          <div class="ov tr"><span class="chip" title="Số học sinh trong khung hình"><svg class="i" style="width:14px;height:14px"><use href="#i-users"/></svg><span id="ovPeople">0</span></span><span class="chip" id="fps">0 FPS</span>
             <button class="icon" onclick="fullscreen()" title="Toàn màn hình (chiếu lên máy chiếu)"><svg class="i"><use href="#i-max"/></svg></button></div>
           <div class="banner" id="banner"><svg class="i"><use href="#i-alert"/></svg><span id="bannerText"></span></div>
         </div>
@@ -603,6 +603,7 @@ async function poll() {
     const src = s.source || "Chưa chọn camera";
     $("srcName").textContent = src; $("ovSrc").textContent = src; $("curSrc").textContent = src;
     $("fps").textContent = s.fps + " FPS";
+    $("ovPeople").textContent = s.people;
     $("dot").className = "dot " + (s.warning ? "alarm" : s.source ? "on" : "");
     $("sPeople").textContent = s.people;
     $("sWarn").textContent = s.warning;

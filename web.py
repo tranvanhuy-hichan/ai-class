@@ -191,7 +191,7 @@ class Engine:
             except Exception as e:  # không để 1 lỗi làm sập cả hệ thống
                 self.error = str(e)
                 continue
-            out = self.drawer.draw(frame, people, fps_meter.tick())
+            out = self.drawer.draw(frame, people, fps_meter.tick(), header=False)  # số liệu đã có trên giao diện
             self._show(out)
 
             for a in alerts:
