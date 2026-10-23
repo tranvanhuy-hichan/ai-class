@@ -232,6 +232,20 @@
     .settings { grid-template-columns: 1fr; }
     .sources { grid-template-columns: 1fr; }
   }
+  /* Bảng chỉnh hình trên video */
+  .vpanel { position: absolute; top: 58px; right: 14px; width: 290px; padding: 14px; border-radius: 14px; display: none; flex-direction: column; gap: 12px;
+            background: #0b0f17e6; border: 1px solid #ffffff1f; color: #e8edf6; backdrop-filter: blur(10px); z-index: 5; }
+  .vpanel.open { display: flex; }
+  .vpanel .vh { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .vpanel .muted { font-size: 11.5px; color: #8592a8; }
+  .vpanel .vrow { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .vpanel .vrow button { flex: 1; background: #ffffff12; border-color: #ffffff1f; color: #e8edf6; padding: 7px 8px; font-size: 13px; }
+  .vpanel .vrow button.on, #flipBtn.on, #viewBtn.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .vpanel .vsl label { display: flex; align-items: baseline; gap: 8px; margin-bottom: 4px; font-size: 13px; }
+  .vpanel .vsl label b { margin-left: auto; }
+  .vpanel .vsl small { display: none; }
+  .vpanel input[type=range] { width: 100%; }
+  @media (max-width: 820px) { .vpanel { left: 14px; right: 14px; width: auto; } }
 </style>
 </head>
 <body>
@@ -256,6 +270,8 @@
   <symbol id="i-upload" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/></symbol>
   <symbol id="i-cam" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></symbol>
   <symbol id="i-power" viewBox="0 0 24 24"><path d="M12 2v10"/><path d="M18.4 6.6a9 9 0 1 1-12.77.04"/></symbol>
+  <symbol id="i-flip" viewBox="0 0 24 24"><path d="m8 3-4 4 4 4"/><path d="M4 7h16"/><path d="m16 21 4-4-4-4"/><path d="M20 17H4"/></symbol>
+  <symbol id="i-rotate" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></symbol>
   <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
   <symbol id="i-play" viewBox="0 0 24 24"><path d="m6 3 14 9-14 9z"/></symbol>
   <symbol id="i-gauge" viewBox="0 0 24 24"><path d="m12 14 4-4"/><path d="M3.3 19a10 10 0 1 1 17.4 0"/></symbol>
@@ -299,7 +315,20 @@
           <img src="/video" alt="Video trực tiếp từ camera lớp học">
           <div class="ov tl"><span class="chip live-badge"><span class="dot"></span>LIVE</span><span class="chip"><span id="ovSrc">-</span></span></div>
           <div class="ov tr"><span class="chip" title="Số học sinh trong khung hình"><svg class="i" style="width:14px;height:14px"><use href="#i-users"/></svg><span id="ovPeople">0</span></span><span class="chip" id="fps">0 FPS</span>
+            <button class="icon" id="flipBtn" onclick="setView({flip_h: !view.flip_h})" title="Lật ngang hình (khi hình bị ngược trái-phải)"><svg class="i"><use href="#i-flip"/></svg></button>
+            <button class="icon" id="viewBtn" onclick="$('viewPanel').classList.toggle('open')" title="Chỉnh hình: xoay, lật, độ sáng, phóng to"><svg class="i"><use href="#i-sliders"/></svg></button>
             <button class="icon" onclick="fullscreen()" title="Toàn màn hình (chiếu lên máy chiếu)"><svg class="i"><use href="#i-max"/></svg></button></div>
+          <div class="vpanel" id="viewPanel">
+            <div class="vh"><b>Chỉnh hình</b><span class="muted">nhớ riêng cho từng camera</span></div>
+            <div class="vrow"><button id="vFlipH" onclick="setView({flip_h: !view.flip_h})"><svg class="i"><use href="#i-flip"/></svg>Lật ngang</button>
+              <button id="vFlipV" onclick="setView({flip_v: !view.flip_v})"><svg class="i" style="transform:rotate(90deg)"><use href="#i-flip"/></svg>Lật dọc</button></div>
+            <div class="vrow"><button onclick="setView({rotate: (view.rotate + 270) % 360})"><svg class="i" style="transform:scaleX(-1)"><use href="#i-rotate"/></svg>Xoay trái</button>
+              <button onclick="setView({rotate: (view.rotate + 90) % 360})"><svg class="i"><use href="#i-rotate"/></svg>Xoay phải</button>
+              <span class="chip" id="vRot">0°</span></div>
+            <div class="vsl"><label>Độ sáng <b id="vBrV">0</b><small>Phòng tối, ngược sáng</small></label><input type="range" id="vBr" min="-80" max="80" step="5"></div>
+            <div class="vsl"><label>Phóng to giữa khung <b id="vZmV">1.0×</b><small>Học sinh ngồi xa trông nhỏ</small></label><input type="range" id="vZm" min="1" max="3" step="0.1"></div>
+            <div class="vrow"><button class="ghost" onclick="setView({flip_h:false, flip_v:false, rotate:0, brightness:0, zoom:1})">Đặt lại</button></div>
+          </div>
           <div class="banner" id="banner"><svg class="i"><use href="#i-alert"/></svg><span id="bannerText"></span></div>
         </div>
 
@@ -597,6 +626,29 @@ function toast(text) {
 }
 
 // ---------- cập nhật trạng thái mỗi giây
+function viewBusy_pending() { return document.activeElement === $("vBr") || document.activeElement === $("vZm"); }
+// ------------------------------------------------------------------ chỉnh hình camera
+let view = { flip_h: false, flip_v: false, rotate: 0, brightness: 0, zoom: 1 }, viewBusy = 0;
+function renderView() {
+  $("flipBtn").classList.toggle("on", view.flip_h);
+  $("vFlipH").classList.toggle("on", view.flip_h);
+  $("vFlipV").classList.toggle("on", view.flip_v);
+  $("viewBtn").classList.toggle("on", view.rotate || view.flip_v || view.brightness || view.zoom > 1);
+  $("vRot").textContent = view.rotate + "°";
+  if (document.activeElement !== $("vBr")) $("vBr").value = view.brightness;
+  if (document.activeElement !== $("vZm")) $("vZm").value = view.zoom;
+  $("vBrV").textContent = (view.brightness > 0 ? "+" : "") + view.brightness;
+  $("vZmV").textContent = Number(view.zoom).toFixed(1) + "×";
+}
+async function setView(patch) {
+  view = { ...view, ...patch }; renderView();  // hiện ngay, không chờ máy chủ
+  const mine = ++viewBusy;
+  try { const r = await post("/api/view", view); if (mine === viewBusy) { view = r.view; renderView(); } }
+  catch (e) { toast(e.message); }
+}
+$("vBr").oninput = e => setView({ brightness: Number(e.target.value) });
+$("vZm").oninput = e => setView({ zoom: Number(e.target.value) });
+
 async function poll() {
   try {
     const s = await api("/api/status?after=" + lastId);
@@ -604,6 +656,7 @@ async function poll() {
     $("srcName").textContent = src; $("ovSrc").textContent = src; $("curSrc").textContent = src;
     $("fps").textContent = s.fps + " FPS";
     $("ovPeople").textContent = s.people;
+    if (s.view && !viewBusy_pending()) { view = s.view; renderView(); }
     $("dot").className = "dot " + (s.warning ? "alarm" : s.source ? "on" : "");
     $("sPeople").textContent = s.people;
     $("sWarn").textContent = s.warning;

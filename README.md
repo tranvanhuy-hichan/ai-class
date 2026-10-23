@@ -57,6 +57,7 @@ Từ lần sau chỉ mất vài giây. Khi Windows hỏi tường lửa, chọn 
 | Dùng camera của trường (Hikvision, Dahua, Imou...) | **⚙ Cài đặt**, dán link `rtsp://...`, bấm **Kết nối** (trang có sẵn địa chỉ mẫu). Máy phải cùng mạng với camera |
 | Demo bằng video có sẵn | **⚙ Cài đặt → Video có sẵn → Tải lên & chạy** (video tự phát lặp lại) |
 | Nhận cảnh báo qua Telegram | **⚙ Cài đặt → Thông báo Telegram**, làm theo 3 bước trên trang |
+| Hình bị ngược trái-phải, camera đặt nghiêng, phòng tối | Trên video bấm nút **⇄ Lật ngang**, hoặc nút chỉnh hình bên cạnh để **lật dọc, xoay 90°/180°, tăng độ sáng, phóng to giữa khung**. Nhớ riêng cho từng camera, áp dụng ngay |
 | Chỉnh độ nhạy | **⚙ Cài đặt → Độ nhạy**, có tác dụng ngay |
 | Lấy số liệu cho báo cáo | **Thống kê → Tải nhật ký** (mở bằng Excel) |
 

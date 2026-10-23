@@ -10,6 +10,7 @@ Chỉ người ngồi ở máy đang chạy app xem được (trang web chỉ m�
 """
 import argparse
 import asyncio
+import hashlib
 import ipaddress
 import json
 import secrets
@@ -87,6 +88,44 @@ def is_local(host):
         return host == "localhost"
 
 
+DEFAULT_VIEW = {"flip_h": False, "flip_v": False, "rotate": 0, "brightness": 0, "zoom": 1.0}
+
+
+def view_key(source):
+    """Mỗi camera nhớ cách chỉnh hình riêng. Băm tên nguồn để không lưu mật khẩu camera dạng chữ."""
+    return hashlib.sha1(source.encode()).hexdigest()[:10]
+
+
+def clean_view(v):
+    """Ép giá trị về khoảng hợp lệ (dữ liệu từ web không đáng tin)."""
+    out = dict(DEFAULT_VIEW)
+    out["flip_h"], out["flip_v"] = bool(v.get("flip_h")), bool(v.get("flip_v"))
+    out["rotate"] = int(v.get("rotate", 0) or 0) // 90 % 4 * 90
+    out["brightness"] = max(-80, min(80, int(float(v.get("brightness", 0) or 0))))
+    out["zoom"] = max(1.0, min(3.0, round(float(v.get("zoom", 1) or 1), 2)))
+    return out
+
+
+def adjust(frame, v):
+    """Chỉnh hình trước khi đưa vào AI: xoay, lật, phóng to giữa khung, tăng/giảm sáng.
+    Chỉnh trước nên khung nhận diện và hình hiển thị luôn khớp nhau."""
+    if v["rotate"]:
+        frame = cv2.rotate(frame, {90: cv2.ROTATE_90_CLOCKWISE, 180: cv2.ROTATE_180,
+                                   270: cv2.ROTATE_90_COUNTERCLOCKWISE}[v["rotate"]])
+    if v["flip_h"]:
+        frame = cv2.flip(frame, 1)
+    if v["flip_v"]:
+        frame = cv2.flip(frame, 0)
+    if v["zoom"] > 1:
+        h, w = frame.shape[:2]
+        ch, cw = int(h / v["zoom"]), int(w / v["zoom"])
+        y, x = (h - ch) // 2, (w - cw) // 2
+        frame = cv2.resize(frame[y:y + ch, x:x + cw], (w, h), interpolation=cv2.INTER_LINEAR)
+    if v["brightness"]:
+        frame = cv2.convertScaleAbs(frame, alpha=1.0 + max(v["brightness"], 0) / 160, beta=v["brightness"])
+    return frame
+
+
 def display_name(source):
     """Tên ngắn để hiện trên web. Không bao giờ hiện mật khẩu camera."""
     if source.isdigit():
@@ -119,6 +158,7 @@ class Engine:
                                   settings.get("save_snapshots", cfg["output"]["save_snapshots"]))
         self.phone = PushSource()
         self.src = None
+        self.view = dict(DEFAULT_VIEW)
         self.source = ""
         self.source_name = ""
         self.thread = None
@@ -150,11 +190,23 @@ class Engine:
                 self.stop()
                 name = display_name(source)
             self.pipe.reset()
+            self.view = clean_view(self.settings.get("views", {}).get(view_key(source), {}))
             self.src, self.source_name, self.source = src, name, source
             self.error = ""
             self.running = True
             self.thread = threading.Thread(target=self._loop, daemon=True)
             self.thread.start()
+
+    def set_view(self, patch):
+        """Đổi cách chỉnh hình của camera đang dùng, nhớ cho lần sau và áp dụng ngay."""
+        new = clean_view({**self.view, **patch})
+        if (new["rotate"], new["flip_h"], new["flip_v"], new["zoom"]) != \
+                (self.view["rotate"], self.view["flip_h"], self.view["flip_v"], self.view["zoom"]):
+            self.pipe.reset()  # đổi hướng/khung hình thì mã số học sinh cũ không còn đúng
+        self.view = new
+        self.settings.setdefault("views", {})[view_key(self.source)] = new
+        SETTINGS_FILE.write_text(json.dumps(self.settings, ensure_ascii=False, indent=2), encoding="utf-8")
+        return new
 
     def stop(self):
         self.running = False
@@ -187,6 +239,7 @@ class Engine:
             t = time.time() - t0 if src.live else idx / src.fps
             idx += 1
             try:
+                frame = adjust(frame, self.view)
                 people, alerts = self.pipe.process(frame, t)
             except Exception as e:  # không để 1 lỗi làm sập cả hệ thống
                 self.error = str(e)
@@ -325,7 +378,7 @@ def create_app(engine, urls):
     @app.get("/api/status")
     def status(after: int = 0):
         return {
-            **engine.status, "source": engine.source_name, "error": engine.error,
+            **engine.status, "source": engine.source_name, "error": engine.error, "view": engine.view,
             "phone_connected": time.time() - engine.phone.last_push < 3,
             "events": [e for e in engine.events if e["id"] > after][-50:],
             "counts": {b: engine.logger.counts.get(b, 0) for b in BEHAVIOR_NAMES},
@@ -362,6 +415,13 @@ def create_app(engine, urls):
         except RuntimeError as e:
             raise HTTPException(400, str(e))
         return {"ok": True, "source": engine.source_name}
+
+    @app.post("/api/view")
+    def set_view(body: dict):
+        try:
+            return {"ok": True, "view": engine.set_view(body)}
+        except (ValueError, TypeError):
+            raise HTTPException(400, "Giá trị không hợp lệ")
 
     @app.post("/api/upload")
     async def upload(file: UploadFile = File(...)):
