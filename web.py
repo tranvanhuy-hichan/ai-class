@@ -52,6 +52,8 @@ from core.window import open_window, wait_closed
 WEB = res("web")
 SETTINGS_FILE = DATA / "settings.json"
 UPLOADS = DATA / "uploads"
+# Luôn hỏi lại máy chủ khi mở trang, để sau khi cập nhật app không bị kẹt giao diện bản cũ
+NO_CACHE = {"Cache-Control": "no-cache, must-revalidate"}
 STORAGE_DEFAULTS = {"save_snapshots": True, "keep_days": 7, "max_storage_mb": 1000}
 # Mã bí mật trong mã QR của điện thoại: chỉ ai quét mã mới gửi hình vào được. Đổi mỗi lần mở app.
 PHONE_KEY = secrets.token_urlsafe(8)
@@ -360,11 +362,11 @@ def create_app(engine, urls):
 
     @app.get("/", response_class=HTMLResponse)
     def index():
-        return FileResponse(WEB / "index.html")
+        return FileResponse(WEB / "index.html", headers=NO_CACHE)
 
     @app.get("/phone", response_class=HTMLResponse)
     def phone_page():
-        return FileResponse(WEB / "phone.html")
+        return FileResponse(WEB / "phone.html", headers=NO_CACHE)
 
     @app.get("/video")
     async def video():
