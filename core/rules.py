@@ -66,6 +66,8 @@ class BehaviorRules:
         grace = self.timing["grace"]
         if st.last_seen is not None:
             grace = max(grace, 2.5 * (t - st.last_seen))
+        if st.timers["head_down"].duration() >= self.timing["head_down"]:
+            grace = max(grace, self.timing["grace"] * 1.5)
         st.last_seen = t
         for name in SIGNALS:
             st.timers[name].update(bool(signals.get(name)), t, grace)

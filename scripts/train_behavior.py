@@ -28,7 +28,11 @@ def main():
     ap.add_argument("--device", default="")
     a = ap.parse_args()
 
-    model = YOLO(a.model)
+    model_path = a.model
+    if not Path(model_path).exists() and (ROOT / "weights" / a.model).exists():
+        model_path = str(ROOT / "weights" / a.model)
+
+    model = YOLO(model_path)
     model.train(data=a.data, epochs=a.epochs, imgsz=a.imgsz, batch=a.batch, device=a.device or None,
                 project=str(ROOT / "runs"), name="behavior", exist_ok=True)
     m = model.val(project=str(ROOT / "runs"), name="behavior_val", exist_ok=True)

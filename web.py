@@ -91,7 +91,7 @@ def is_local(host):
         return host == "localhost"
 
 
-DEFAULT_VIEW = {"flip_h": False, "flip_v": False, "rotate": 0, "brightness": 0, "zoom": 1.0}
+DEFAULT_VIEW = {"flip_h": True, "flip_v": False, "rotate": 0, "brightness": 0, "zoom": 1.0}
 
 
 def view_key(source):

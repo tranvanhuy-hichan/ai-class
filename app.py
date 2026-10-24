@@ -26,6 +26,7 @@ def main():
     ap.add_argument("--source", default="0", help="Số thứ tự webcam, link camera điện thoại/IP, hoặc file video")
     ap.add_argument("--config", default="config.yaml")
     ap.add_argument("--save", default="", help="Lưu video kết quả ra file .mp4")
+    ap.add_argument("--flip", action="store_true", help="Lật ngang hình ảnh camera")
     ap.add_argument("--no-show", action="store_true", help="Không mở cửa sổ hiển thị")
     args = ap.parse_args()
 
@@ -51,6 +52,8 @@ def main():
                 if src.live:
                     continue  # camera đang kết nối lại
                 break
+            if args.flip:
+                frame = cv2.flip(frame, 1)
             # Camera trực tiếp: dùng đồng hồ thật. Video: dùng thời gian trong video để
             # kết quả không phụ thuộc máy chạy nhanh hay chậm.
             t = time.time() - t0 if src.live else frame_idx / video_fps

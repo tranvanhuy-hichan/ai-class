@@ -11,43 +11,43 @@ models:
   eye_method: mediapipe
   face_landmarker: weights/face_landmarker.task   # tự tải về nếu chưa có
   eye_classifier: weights/eye_cls.pt
-  custom_behavior: ""          # (Tuỳ chọn) mô hình hành vi tự huấn luyện, vd: weights/behavior.pt
+  custom_behavior: weights/behavior.pt          # Mô hình hành vi tự huấn luyện vừa hoàn thành (mAP 99.4%)
   device: ""                   # "" = tự chọn (GPU nếu có), "cpu", hoặc "0"
 
 detection:
-  person_conf: 0.4             # Độ tin cậy tối thiểu để nhận là người
-  phone_conf: 0.3              # Độ tin cậy tối thiểu để nhận là điện thoại
-  keypoint_conf: 0.5           # Độ tin cậy tối thiểu của 1 điểm khung xương
-  imgsz: 640                   # Webcam gần (1-3 người): 640. Cả lớp học: 1280 (thấy người nhỏ ở bàn cuối, chậm hơn ~3 lần)
+  person_conf: 0.40            # Lọc bỏ vật thể treo tường (áo khoác, ghế)
+  phone_conf: 0.15             # Bắt điện thoại siêu nhạy (kể cả mặt lưng, góc nghiêng)
+  keypoint_conf: 0.30          # Nhận diện khung xương nhạy hơn
+  imgsz: 960                   # Tối ưu cho lớp học: 960
 
 rules:
   # Tỉ lệ (khoảng cách đầu cao hơn vai) / (độ rộng vai).
   # Ngồi thẳng ~0.5-1.0; gục đầu xuống bàn thì đầu gần/thấp hơn vai -> nhỏ.
-  head_down_ratio: 0.15
-  # Điện thoại được tính là "đang cầm" nếu cách cổ tay < hệ số * độ rộng vai
-  phone_wrist_factor: 0.8
-  # Mắt được coi là nhắm nếu điểm nhắm mắt > ngưỡng (MediaPipe: mở ~0.1-0.4, nhắm ~0.6-0.9)
-  blink_threshold: 0.55
+  head_down_ratio: 0.20        # 0.20 cân bằng tối ưu giữa ngồi học và gục đầu
+  # Điện thoại được tính là "đang cầm" nếu cách cổ tay/bàn < hệ số * độ rộng vai
+  phone_wrist_factor: 1.10
+  # Mắt được coi là nhắm nếu điểm nhắm mắt > ngưỡng
+  blink_threshold: 0.50
   # Với eye_method: classifier - mắt nhắm nếu xác suất "closed" > ngưỡng này
-  eye_closed_prob: 0.8
-  # Chỉ phân loại mắt khi khoảng cách 2 mắt trong ảnh >= số pixel này (mặt đủ to)
-  min_eye_distance_px: 30
+  eye_closed_prob: 0.75
+  # Chỉ phân loại mắt khi khoảng cách 2 mắt trong ảnh >= số pixel này
+  min_eye_distance_px: 16
 
 timing:                        # Hành vi phải kéo dài bao lâu (giây) mới cảnh báo
-  phone: 2.0
-  head_down: 3.0
-  sleeping: 10.0               # Gục đầu liên tục >= 10s -> coi là ngủ gục
-  eyes_closed: 3.0             # Nhắm mắt liên tục >= 3s -> coi là ngủ gật
-  grace: 0.8                   # Cho phép "mất dấu" ngắn (giây) mà không reset bộ đếm
-  cooldown: 15.0               # Sau khi cảnh báo 1 học sinh, chờ bấy nhiêu giây mới cảnh báo lại
+  phone: 1.5                   # 1.5 giây cầm điện thoại -> cảnh báo ngay
+  head_down: 2.5               # 2.5 giây cúi đầu -> cảnh báo gục đầu
+  sleeping: 6.0                # Gục đầu liên tục >= 6s -> cảnh báo ngủ gục (rõ ràng, không phải chờ lâu)
+  eyes_closed: 2.5             # Nhắm mắt liên tục >= 2.5s -> cảnh báo ngủ gật
+  grace: 1.5                   # Cho phép "mất dấu" 1.5 giây mà không reset bộ đếm
+  cooldown: 10.0               # Thời gian chờ giữa 2 lần cảnh báo cùng hành vi
 
 # Ánh xạ tên lớp của mô hình tự huấn luyện -> hành vi của hệ thống.
 # Sửa theo đúng tên lớp trong file data.yaml của bộ dữ liệu bạn dùng.
 custom_class_map:
   phone: phone
-  using_phone: phone
-  "looking at a phone": phone
+  sleep: sleeping
   sleeping: sleeping
+  using_phone: phone
   bow_head: head_down
   "bowing the head": head_down
   "leaning over the table": head_down

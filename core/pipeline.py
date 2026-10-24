@@ -2,14 +2,16 @@
 
 Mỗi khung hình đi qua các bước:
   1. YOLO-pose: tìm người, gán ID theo dõi (tracking), lấy 17 điểm khung xương
-  2. YOLO (COCO): tìm điện thoại -> gán cho học sinh đang cầm nó
-  3. MediaPipe (hoặc mô hình mắt tự huấn luyện): mắt mở hay nhắm
-  4. (Tuỳ chọn) Mô hình hành vi tự huấn luyện
-  5. Luật thời gian -> quyết định có cảnh báo hay không
+  2. SpatialTracker: ổn định ID học sinh theo vị trí bàn học (chống nhảy ID khi gục đầu)
+  3. YOLO (COCO): tìm điện thoại -> gán cho học sinh trong vùng tương tác bàn/tay
+  4. MediaPipe (hoặc mô hình mắt tự huấn luyện): mắt mở hay nhắm
+  5. (Tuỳ chọn) Mô hình hành vi tự huấn luyện
+  6. Luật thời gian -> quyết định có cảnh báo hay không
 """
 from pathlib import Path
 
 import cv2
+import numpy as np
 import yaml
 from ultralytics import YOLO
 
@@ -45,11 +47,121 @@ def load_config(path="config.yaml"):
         return yaml.safe_load(f)
 
 
+def desk_match_score(b1, b2):
+    """Tính độ tương đồng vị trí người ngồi giữa 2 khung hình (hỗ trợ cả khi đổi tư thế gục)."""
+    # 1. 2D IoU
+    iou = sg.box_iou(b1, b2)
+    if iou >= 0.20:
+        return iou
+    # 2. Độ trùng lặp trục ngang (X-overlap) khi học sinh ngồi cùng một cột bàn
+    ix0 = max(b1[0], b2[0])
+    ix1 = min(b1[2], b2[2])
+    inter_w = max(0.0, ix1 - ix0)
+    union_w = max(b1[2], b2[2]) - min(b1[0], b2[0])
+    x_overlap = inter_w / union_w if union_w > 0 else 0.0
+
+    c1 = sg.center(b1)
+    c2 = sg.center(b2)
+    avg_h = ((b1[3] - b1[1]) + (b2[3] - b2[1])) / 2
+    y_dist = abs(c1[1] - c2[1])
+
+    if x_overlap >= 0.40 and y_dist < 1.2 * avg_h:
+        return 0.4 + 0.6 * x_overlap
+    return 0.0
+
+
+class SpatialTracker:
+    """Ổn định ID học sinh trong lớp học dựa trên vị trí ngồi cố định tại bàn.
+
+    Giải quyết triệt để các vấn đề trong lớp đông người:
+    - Tracker của YOLO bị nhảy ID (ID switch) khi học sinh gục đầu/úp mặt xuống bàn.
+    - Bộ đếm thời gian (vd: 10s ngủ gục) bị reset về 0 do ID đổi đột ngột.
+    - Một số khung hình tracker chưa kịp gán ID (boxes.id is None).
+    """
+
+    def __init__(self, iou_thresh=0.25, max_lost_sec=15.0):
+        self.iou_thresh = iou_thresh
+        self.max_lost_sec = max_lost_sec
+        # track_id -> {"box": [x0,y0,x1,y1], "last_seen": t}
+        self.active_tracks = {}
+        # yolo_id -> stable_id
+        self.yolo_to_stable = {}
+        self.next_fallback_id = 1
+
+    def reset(self):
+        self.active_tracks.clear()
+        self.yolo_to_stable.clear()
+        self.next_fallback_id = 1
+
+    def assign_ids(self, raw_ids, boxes, t):
+        """Gán ID ổn định cho danh sách boxes tại thời điểm t."""
+        # 1. Dọn dẹp các track đã biến mất quá max_lost_sec (15 giây)
+        for tid in [k for k, v in list(self.active_tracks.items()) if t - v["last_seen"] > self.max_lost_sec]:
+            del self.active_tracks[tid]
+            for y_id in [yk for yk, sv in list(self.yolo_to_stable.items()) if sv == tid]:
+                del self.yolo_to_stable[y_id]
+
+        stable_ids = []
+        used_stable_ids = set()
+
+        for i, box in enumerate(boxes):
+            raw_id = raw_ids[i] if (raw_ids is not None and i < len(raw_ids)) else None
+            assigned_id = None
+
+            # A. Nếu raw_id đã được map trước đó và còn gần vị trí cũ
+            if raw_id is not None and raw_id in self.yolo_to_stable:
+                cand_id = self.yolo_to_stable[raw_id]
+                if cand_id not in used_stable_ids and cand_id in self.active_tracks:
+                    score = desk_match_score(box, self.active_tracks[cand_id]["box"])
+                    if score >= 0.20:
+                        assigned_id = cand_id
+
+            # B. Nếu chưa có: tìm trong active_tracks xem có học sinh nào ở cùng vị trí bàn này không
+            if assigned_id is None:
+                best_id, best_score = None, 0.0
+                for s_id, data in self.active_tracks.items():
+                    if s_id in used_stable_ids:
+                        continue
+                    score = desk_match_score(box, data["box"])
+                    if score > best_score and score >= self.iou_thresh:
+                        best_score, best_id = score, s_id
+                if best_id is not None:
+                    assigned_id = best_id
+                    if raw_id is not None:
+                        self.yolo_to_stable[raw_id] = assigned_id
+
+            # C. Nếu vẫn chưa có: ưu tiên tái sử dụng ID nhỏ hoặc cấp ID tiếp theo
+            if assigned_id is None:
+                if raw_id is not None and raw_id not in self.active_tracks:
+                    assigned_id = raw_id
+                else:
+                    # Tìm ID nhỏ nhất chưa dùng
+                    cur_ids = set(self.active_tracks.keys()) | used_stable_ids
+                    new_id = 1
+                    while new_id in cur_ids:
+                        new_id += 1
+                    assigned_id = new_id
+
+                if raw_id is not None:
+                    self.yolo_to_stable[raw_id] = assigned_id
+
+            used_stable_ids.add(assigned_id)
+            stable_ids.append(assigned_id)
+            self.active_tracks[assigned_id] = {"box": box, "last_seen": t}
+
+        return stable_ids
+
+
 class Pipeline:
     def __init__(self, cfg):
         self.cfg = cfg
         m = cfg["models"]
         self.device = m.get("device") or None
+        import torch
+        self.has_cuda = torch.cuda.is_available() if not self.device else (str(self.device).lower() not in ("cpu", "-1"))
+        if not self.has_cuda:
+            print("[i] Đang chạy chế độ CPU (máy không có GPU) - áp dụng bộ tối ưu tiết kiệm tài nguyên.")
+
         self.pose = YOLO(str(res(m["pose"])))
         self.obj = YOLO(str(res(m["object"])))
 
@@ -70,11 +182,13 @@ class Pipeline:
             self.custom_map = {i: cmap.get(n.lower()) for i, n in self.custom.names.items()}
             print(f"[i] Đã nạp mô hình hành vi: {m['custom_behavior']} -> {self.custom_map}")
 
+        self.tracker = SpatialTracker()
         self.rules = BehaviorRules(cfg["timing"])
 
     def reset(self):
-        """Gọi khi chuyển sang video mới."""
+        """Gọi khi chuyển sang video mới hoặc đổi camera."""
         self.rules = BehaviorRules(self.cfg["timing"])
+        self.tracker.reset()
         self.pose.predictor = None  # tạo lại bộ theo dõi (ID) từ đầu
 
     # ------------------------------------------------------------------
@@ -88,18 +202,25 @@ class Pipeline:
         det, r = self.cfg["detection"], self.cfg["rules"]
         thr = det["keypoint_conf"]
 
+        # Sử dụng bytetrack để theo dõi ổn định và mượt mà hơn trong lớp học
         res = self.pose.track(frame, persist=True, conf=det["person_conf"], imgsz=det["imgsz"],
-                              device=self.device, verbose=False)[0]
+                              tracker="bytetrack.yaml", device=self.device, verbose=False)[0]
         people = []
-        if res.boxes is not None and res.boxes.id is not None:
+        if res.boxes is not None and len(res.boxes) > 0:
             boxes = res.boxes.xyxy.cpu().numpy()
-            ids = res.boxes.id.int().cpu().tolist()
+            raw_ids = res.boxes.id.int().cpu().tolist() if res.boxes.id is not None else None
             kpts = res.keypoints.data.cpu().numpy()  # (N, 17, 3)
+            ids = self.tracker.assign_ids(raw_ids, boxes, t)
+
             for tid, box, kp in zip(ids, boxes, kpts):
-                ratio = sg.head_ratio(kp, thr)
+                # Loại bỏ các vật tĩnh như áo khoác treo tường không có điểm khung xương đáng tin
+                if np.max(kp[:, 2]) < 0.40:
+                    continue
+                ratio = sg.head_ratio(kp, thr, box)
+                is_head_down = ratio is not None and ratio < r["head_down_ratio"]
                 people.append({
                     "id": tid, "box": box, "kpts": kp, "head_ratio": ratio,
-                    "signals": {"head_down": ratio is not None and ratio < r["head_down_ratio"]},
+                    "signals": {"head_down": is_head_down},
                 })
 
         if people:
@@ -121,48 +242,79 @@ class Pipeline:
 
     # ------------------------------------------------------------------
     def _detect_phones(self, frame, people, det, r, thr):
-        res = self.obj.predict(frame, classes=[COCO_PHONE], conf=det["phone_conf"], imgsz=det["imgsz"],
+        """Nhận diện điện thoại và liên kết với học sinh tương ứng."""
+        phone_conf = det.get("phone_conf", 0.15)
+        res = self.obj.predict(frame, classes=[COCO_PHONE], conf=phone_conf, imgsz=det["imgsz"],
                                device=self.device, verbose=False)[0]
+        if res.boxes is None or len(res.boxes) == 0:
+            return
+
         for box in res.boxes.xyxy.cpu().numpy():
             c = sg.center(box)
-            best, best_d = None, None
+            best_person = None
+            best_dist = float("inf")
+
             for p in people:
-                if not sg.contains(p["box"], c):
+                # 1. Kiểm tra xem điện thoại có nằm trong vùng tương tác (hai bên tay, bàn, lòng) không
+                izone = sg.interaction_box(p["box"])
+                if not sg.contains(izone, c, pad=0.0):
                     continue
-                d = sg.wrist_distance(p["kpts"], c, thr)
-                if d is not None and d > r["phone_wrist_factor"]:
-                    continue  # điện thoại nằm trong khung nhưng xa tay (vd để trên bàn)
-                d = 0.0 if d is None else d
-                if best is None or d < best_d:
-                    best, best_d = p, d
-            if best is not None:
-                best["signals"]["phone"] = True
-                best.setdefault("phone_boxes", []).append(box)
+
+                # 2. Đo khoảng cách tối ưu tới tay/khuỷu tay/bàn học sinh
+                d = sg.person_phone_distance(p["kpts"], p["box"], c, thr, r.get("phone_wrist_factor", 1.2))
+                if d is not None and d < best_dist:
+                    best_person = p
+                    best_dist = d
+                elif d is None:
+                    # Nếu điểm xương tay bị khuất (vd cận cảnh webcam) nhưng điện thoại nằm trong vùng tương tác
+                    c_person = sg.center(p["box"])
+                    norm_w = max(20.0, (p["box"][2] - p["box"][0]))
+                    dist_to_person = np.hypot(c_person[0] - c[0], c_person[1] - c[1]) / norm_w
+                    if dist_to_person < 1.8 and dist_to_person < best_dist:
+                        best_person = p
+                        best_dist = dist_to_person
+
+            if best_person is not None:
+                best_person["signals"]["phone"] = True
+                best_person.setdefault("phone_boxes", []).append(box)
 
     def _check_eyes_mediapipe(self, frame, people, r, thr):
+        """Kiểm tra nhắm mắt bằng MediaPipe. Bỏ qua học sinh đã gục đầu để tiết kiệm tài nguyên."""
         import mediapipe as mp
+        min_eye_dist = r.get("min_eye_distance_px", 16)
+        max_faces_per_frame = 4 if not self.has_cuda else 20
+        checked_faces = 0
+
         for p in people:
-            box = sg.head_box(frame, p["kpts"], thr, r["min_eye_distance_px"])
+            # Học sinh đã gục đầu thì chắc chắn đang gục/ngủ, không cần chạy MediaPipe
+            if p["signals"].get("head_down"):
+                continue
+            if checked_faces >= max_faces_per_frame:
+                break
+
+            box = sg.head_box(frame, p["kpts"], thr, min_eye_dist)
             if box is None:
                 continue
             x0, y0, x1, y1 = box
-            # Phóng to vùng đầu để MediaPipe nhìn rõ cả khi học sinh ngồi xa
             head = cv2.resize(frame[y0:y1, x0:x1], (256, 256))
             res = self.face.detect(mp.Image(image_format=mp.ImageFormat.SRGB,
                                             data=cv2.cvtColor(head, cv2.COLOR_BGR2RGB)))
+            checked_faces += 1
             if not res.face_blendshapes:
                 continue
             score = {b.category_name: b.score for b in res.face_blendshapes[0]}
-            closed = (score["eyeBlinkLeft"] + score["eyeBlinkRight"]) / 2
+            closed = (score.get("eyeBlinkLeft", 0.0) + score.get("eyeBlinkRight", 0.0)) / 2
             p["eye_closed_prob"] = closed
             p["signals"]["eyes_closed"] = closed > r["blink_threshold"]
 
     def _check_eyes(self, frame, people, r, thr):
+        min_eye_dist = r.get("min_eye_distance_px", 16)
         for p in people:
-            crops = sg.eye_crops(frame, p["kpts"], thr, r["min_eye_distance_px"])
+            if p["signals"].get("head_down"):
+                continue
+            crops = sg.eye_crops(frame, p["kpts"], thr, min_eye_dist)
             if not crops:
                 continue
-            # Ảnh mắt trong bộ dữ liệu thường là ảnh xám -> chuyển cho giống
             crops = [cv2.cvtColor(cv2.cvtColor(c, cv2.COLOR_BGR2GRAY), cv2.COLOR_GRAY2BGR) for c in crops]
             outs = self.eye.predict(crops, imgsz=64, device=self.device, verbose=False)
             prob = sum(float(o.probs.data[self.closed_idx]) for o in outs) / len(outs)
@@ -172,14 +324,22 @@ class Pipeline:
     def _custom_behaviors(self, frame, people, det):
         res = self.custom.predict(frame, conf=det["person_conf"], imgsz=det["imgsz"],
                                   device=self.device, verbose=False)[0]
+        if res.boxes is None or len(res.boxes) == 0:
+            return
         for box, cls in zip(res.boxes.xyxy.cpu().numpy(), res.boxes.cls.int().cpu().tolist()):
             behavior = self.custom_map.get(cls)
-            if behavior is None:
+            if not behavior:
                 continue
-            signal = "eyes_closed" if behavior == "sleeping" else behavior
             c = sg.center(box)
-            # Gán cho người có khung nhỏ nhất chứa tâm của phát hiện
-            owners = [p for p in people if sg.contains(p["box"], c, pad=0.0)]
-            if owners:
-                owner = min(owners, key=lambda p: (p["box"][2] - p["box"][0]) * (p["box"][3] - p["box"][1]))
-                owner["signals"][signal] = True
+            # Tìm học sinh có vùng tương tác chứa tâm phát hiện
+            matches = [p for p in people if sg.contains(sg.interaction_box(p["box"]), c, pad=0.0)]
+            if matches:
+                owner = min(matches, key=lambda p: np.hypot(sg.center(p["box"])[0] - c[0], sg.center(p["box"])[1] - c[1]))
+                if behavior == "sleeping":
+                    owner["signals"]["head_down"] = True
+                    owner["signals"]["eyes_closed"] = True
+                elif behavior == "phone":
+                    owner["signals"]["phone"] = True
+                    owner.setdefault("phone_boxes", []).append(box)
+                elif behavior in owner["signals"]:
+                    owner["signals"][behavior] = True
