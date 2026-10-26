@@ -142,6 +142,14 @@ class FightDetector:
         return sorted(out)
 
     @staticmethod
+    def near(b1, b2):
+        """Hai người đứng đủ gần để có thể đánh nhau (rộng hơn 'chạm nhau'): dùng để bắt đầu xử lý dày sớm hơn."""
+        w = ((b1[2] - b1[0]) + (b2[2] - b2[0])) / 2
+        gap_x = max(b1[0], b2[0]) - min(b1[2], b2[2])
+        gap_y = max(b1[1], b2[1]) - min(b1[3], b2[3])
+        return gap_x < 0.6 * w and gap_y < 0
+
+    @staticmethod
     def _touching(b1, b2, iou=0.15):
         if sg.box_iou(b1, b2) > iou:
             return True

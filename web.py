@@ -444,7 +444,7 @@ class Camera:
                     self._show(out)
             self.last_frame = time.time()
             self.empty_since = None if people else (self.empty_since or self.last_frame)
-            self.touching = any(FightDetector._touching(a["box"], b["box"], 0.02) for i, a in enumerate(people) for b in people[i + 1:])
+            self.touching = any(FightDetector.near(a["box"], b["box"]) for i, a in enumerate(people) for b in people[i + 1:])
 
             for a in alerts:
                 eng.on_alert(self, a, out)
@@ -486,10 +486,10 @@ class Camera:
 
 DISPLAY_FPS = 20      # tốc độ video cho người xem (độc lập với tốc độ AI)
 STALE_OVERLAY = 2.5   # khung/nhãn AI cũ hơn mức này (giây) thì không vẽ nữa
-BOOST_FPS = 5         # khi nghi xô đẩy: xử lý dày tới mức này dù đang đặt thấp hơn
+BOOST_FPS = 8         # khi nghi xô đẩy: xử lý dày tới mức này dù đang đặt thấp hơn
 BOOST_HOLD = 3.0       # giữ chế độ xử lý dày thêm ngần này giây sau lần phát hiện cuối
 MOTION_THRESHOLD = 6.0  # độ chênh trung bình (0-255) giữa 2 ảnh liên tiếp coi là chuyển động mạnh
-DEFAULT_FPS = 5       # số hình xử lý mỗi giây cho mỗi camera (0 = không giới hạn)
+DEFAULT_FPS = 2       # số hình xử lý mỗi giây cho mỗi camera (0 = không giới hạn)
 MAX_WIDTH = 1280      # khung hình rộng hơn mức này được thu nhỏ trước khi xử lý
 IDLE_AFTER = 8.0      # giây không thấy học sinh nào thì chuyển sang chế độ nghỉ
 IDLE_INTERVAL = 0.5   # chế độ nghỉ: giây giữa 2 lần kiểm tra

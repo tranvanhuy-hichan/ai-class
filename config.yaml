@@ -48,7 +48,7 @@ timing:                        # Hành vi phải kéo dài bao lâu (giây) mớ
   eyes_closed: 10.0            # Nhắm mắt liên tục >= 10s -> cảnh báo ngủ gật (nhìn xuống đọc bài dễ bị đo nhầm là nhắm mắt nên để lâu)
   grace: 1.5                   # Cho phép "mất dấu" 1.5 giây mà không reset bộ đếm
   smoking: 2.0                 # Thấy điếu thuốc ở miệng/tay liên tục 2 giây -> cảnh báo
-  fighting: 1.0                # Đánh nhau kéo dài 1 giây (cú đánh đã được đếm trong cửa sổ vài giây) -> cảnh báo
+  fighting: 0.5                # Đánh nhau kéo dài 0.5 giây (cú đánh đã được đếm trong cửa sổ vài giây) -> cảnh báo
   cooldown: 10.0               # Thời gian chờ giữa 2 lần cảnh báo cùng hành vi
 
 # Phát hiện đánh nhau từ khung xương (core/fight.py).
