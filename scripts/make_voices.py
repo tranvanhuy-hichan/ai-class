@@ -3,6 +3,7 @@
   python scripts/make_voices.py                               # giọng nữ HoaiMy (mặc định)
   python scripts/make_voices.py --voice vi-VN-NamMinhNeural   # giọng nam
   python scripts/make_voices.py --engine gtts                 # giọng Google
+  python scripts/make_voices.py --missing                     # chỉ tạo hành vi mới thêm, giữ giọng cũ
 
 Chỉ cần Internet lúc chạy lệnh này. File được lưu ở web/sounds/ và dùng được mãi
 không cần mạng, cho cả loa máy chạy hệ thống lẫn trình duyệt:
@@ -29,10 +30,13 @@ def main():
     ap.add_argument("--engine", choices=["edge", "gtts"], default="edge")
     ap.add_argument("--voice", default="vi-VN-HoaiMyNeural", help="vi-VN-HoaiMyNeural (nữ) hoặc vi-VN-NamMinhNeural (nam)")
     ap.add_argument("--rate", default="-5%", help="Tốc độ đọc của edge-tts, vd -10%% là chậm hơn")
+    ap.add_argument("--missing", action="store_true", help="Chỉ tạo các hành vi chưa có file, giữ nguyên giọng đã có")
     a = ap.parse_args()
 
     save_wav(OUT / "chime.wav", np.concatenate([chime(), silence(0.1)]))
     for key, text in PHRASES.items():
+        if a.missing and (OUT / f"{key}.wav").exists() and (OUT / f"say_{key}.wav").exists():
+            continue
         voice = speak(text, a.engine, a.voice, a.rate)
         save_wav(OUT / f"say_{key}.wav", np.concatenate([voice, silence(0.15)]))
         full = np.concatenate([chime(), silence(0.15), voice, silence(0.15)])

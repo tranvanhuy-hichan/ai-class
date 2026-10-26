@@ -258,6 +258,12 @@ class Pipeline:
             if self.custom is not None:
                 self._custom_behaviors(frame, people, det, t)
 
+        for p in people:
+            # Đang vật nhau/xô đẩy thì đầu cúi, mắt híp hay nhắm không phải gục hay ngủ: bỏ để khỏi báo nhầm
+            if p["signals"].get("fighting"):
+                p["signals"].pop("eyes_closed", None)
+                p["signals"].pop("head_down", None)
+
         alerts = []
         for p in people:
             p["active"], new = self.rules.update(p["id"], p["signals"], t)
