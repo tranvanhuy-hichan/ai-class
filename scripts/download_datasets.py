@@ -9,6 +9,10 @@
       Bộ ảnh hành vi học sinh trong lớp (định dạng YOLO) từ Roboflow Universe.
       Lấy API key miễn phí tại https://app.roboflow.com/settings/api
 
+  python scripts/download_datasets.py smoking
+      Ảnh người hút thuốc (Kaggle, cần ~/.kaggle/kaggle.json), nhãn YOLO cho điếu thuốc.
+      Sau đó gộp với dữ liệu lớp học: python scripts/prepare_smoking_dataset.py
+
 Bộ SCB-Dataset (lớn nhất về hành vi học sinh: cúi đầu, nằm bò ra bàn, dùng
 điện thoại, giơ tay, đọc, viết...) phải tải thủ công theo hướng dẫn tại
 https://github.com/Whiffe/SCB-dataset rồi giải nén vào data/scb/.
@@ -31,6 +35,20 @@ def download_eyes():
     print("Bước tiếp theo: python scripts/prepare_eye_dataset.py --src data/raw_eyes")
 
 
+SMOKING_SETS = ["prajjwalkumarpanzade/smoking-and-drinking-dataset-for-yolo"]
+
+
+def download_smoking():
+    import kagglehub
+    for ref in SMOKING_SETS:
+        dst = DATA / "smoking_raw" / ref.split("/")[1]
+        if dst.exists():
+            shutil.rmtree(dst)
+        shutil.copytree(kagglehub.dataset_download(ref), dst)
+        print(f"Đã tải về: {dst}")
+    print("Bước tiếp theo: python scripts/prepare_smoking_dataset.py")
+
+
 def download_roboflow(a):
     from roboflow import Roboflow
     rf = Roboflow(api_key=a.api_key)
@@ -44,6 +62,7 @@ def main():
     ap = argparse.ArgumentParser()
     sub = ap.add_subparsers(dest="cmd", required=True)
     sub.add_parser("eyes")
+    sub.add_parser("smoking")
     r = sub.add_parser("roboflow")
     r.add_argument("--api-key", required=True)
     r.add_argument("--workspace", default="burak-koyfx")
@@ -53,6 +72,8 @@ def main():
     DATA.mkdir(exist_ok=True)
     if a.cmd == "eyes":
         download_eyes()
+    elif a.cmd == "smoking":
+        download_smoking()
     else:
         download_roboflow(a)
 

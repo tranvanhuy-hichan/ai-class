@@ -11,14 +11,22 @@ models:
   eye_method: mediapipe
   face_landmarker: weights/face_landmarker.task   # tự tải về nếu chưa có
   eye_classifier: weights/eye_cls.pt
-  custom_behavior: weights/behavior.pt          # Mô hình hành vi tự huấn luyện vừa hoàn thành (mAP 99.4%)
+  custom_behavior: weights/behavior.pt          # 4 lớp: phone, sleep, study, smoking (bản trước khi thêm hút thuốc: weights/behavior_v1.pt)
   device: ""                   # "" = tự chọn (GPU nếu có), "cpu", hoặc "0"
 
 detection:
   person_conf: 0.40            # Lọc bỏ vật thể treo tường (áo khoác, ghế)
+  smoking_conf: 0.50           # Ngưỡng riêng cho điếu thuốc. 0.50 báo nhầm ~2% ảnh lớp học, 0.30 báo nhầm ~6% (đã đo)
   phone_conf: 0.15             # Bắt điện thoại siêu nhạy (kể cả mặt lưng, góc nghiêng)
   keypoint_conf: 0.30          # Nhận diện khung xương nhạy hơn
   imgsz: 960                   # Tối ưu cho lớp học: 960
+
+performance:                   # Tối ưu cho máy yếu (giây; 0 = chạy mọi khung hình)
+  aux_interval_cpu: 0.5        # Máy không GPU: tìm điện thoại / mô hình hành vi mỗi 0.5 giây
+  aux_interval_gpu: 0.0        # Máy có GPU: chạy mọi khung hình
+  eye_interval_cpu: 0.7        # Đo độ nhắm mắt của mỗi học sinh mỗi 0.7 giây
+  eye_interval_gpu: 0.0
+  frame_budget_ms: 250         # Một khung xử lý quá 250 ms thì tự giãn thêm các mô hình phụ (tối đa x4). 0 = tắt
 
 rules:
   # Tỉ lệ (khoảng cách đầu cao hơn vai) / (độ rộng vai).
@@ -39,7 +47,16 @@ timing:                        # Hành vi phải kéo dài bao lâu (giây) mớ
   sleeping: 6.0                # Gục đầu liên tục >= 6s -> cảnh báo ngủ gục (rõ ràng, không phải chờ lâu)
   eyes_closed: 2.5             # Nhắm mắt liên tục >= 2.5s -> cảnh báo ngủ gật
   grace: 1.5                   # Cho phép "mất dấu" 1.5 giây mà không reset bộ đếm
+  smoking: 2.0                 # Thấy điếu thuốc ở miệng/tay liên tục 2 giây -> cảnh báo
+  fighting: 1.0                # Đánh nhau kéo dài 1 giây (cú đánh đã được đếm trong cửa sổ vài giây) -> cảnh báo
   cooldown: 10.0               # Thời gian chờ giữa 2 lần cảnh báo cùng hành vi
+
+# Phát hiện đánh nhau từ khung xương (core/fight.py).
+fight:
+  swing_speed: 5.0             # Cổ tay nhanh hơn mức này (độ rộng vai / giây) mới tính là một cú vung
+  window: 2.5                  # Đếm các cú đánh trong khoảng thời gian này (giây)
+  min_strikes: 3               # Số cú vung trúng người bên cạnh để coi là đánh nhau
+  min_flails: 3                # Hai người sát nhau, mỗi người vung tay từng này lần cũng bị tính
 
 # Ánh xạ tên lớp của mô hình tự huấn luyện -> hành vi của hệ thống.
 # Sửa theo đúng tên lớp trong file data.yaml của bộ dữ liệu bạn dùng.
@@ -51,6 +68,7 @@ custom_class_map:
   bow_head: head_down
   "bowing the head": head_down
   "leaning over the table": head_down
+  smoking: smoking
 
 output:
   log_dir: logs                # Lưu file CSV và ảnh chụp khi có cảnh báo

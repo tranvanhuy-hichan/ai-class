@@ -10,9 +10,11 @@ BEHAVIOR_NAMES = {
     "phone": "Dùng điện thoại",
     "head_down": "Gục đầu xuống bàn",
     "sleeping": "Ngủ gục / ngủ gật",
+    "fighting": "Đánh nhau",
+    "smoking": "Hút thuốc",
 }
 
-SIGNALS = ("phone", "head_down", "eyes_closed")
+SIGNALS = ("phone", "head_down", "eyes_closed", "fighting", "smoking")
 
 
 class Timer:
@@ -75,10 +77,16 @@ class BehaviorRules:
         d_phone = st.timers["phone"].duration()
         d_head = st.timers["head_down"].duration()
         d_eyes = st.timers["eyes_closed"].duration()
+        d_fight = st.timers["fighting"].duration()
+        d_smoke = st.timers["smoking"].duration()
 
         active = {}
         if d_phone >= self.timing["phone"]:
             active["phone"] = d_phone
+        if d_smoke >= self.timing.get("smoking", 2.0):
+            active["smoking"] = d_smoke
+        if d_fight >= self.timing.get("fighting", 1.0):
+            active["fighting"] = d_fight
         if d_head >= self.timing["sleeping"] or d_eyes >= self.timing["eyes_closed"]:
             active["sleeping"] = max(d_head, d_eyes)
         elif d_head >= self.timing["head_down"]:

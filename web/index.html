@@ -17,7 +17,7 @@
     --text: #e8edf6; --muted: #8592a8; --faint: #5b667a;
     --accent: #6d6afe; --accent-2: #22d3ee; --accent-soft: #6d6afe22;
     --ok: #22c55e; --bad: #f43f5e;
-    --phone: #a855f7; --head: #f59e0b; --sleep: #f43f5e;
+    --phone: #a855f7; --head: #f59e0b; --sleep: #f43f5e; --fight: #0ea5e9; --smoke: #84cc16;
     --radius: 16px; --shadow: 0 1px 0 #ffffff08 inset, 0 8px 30px #0006;
     color-scheme: dark;
   }
@@ -99,6 +99,8 @@
   .t-phone { background: #a855f71f; color: var(--phone); }
   .t-head { background: #f59e0b1f; color: var(--head); }
   .t-sleep { background: #f43f5e1f; color: var(--sleep); }
+  .t-smoke { background: #84cc161f; color: var(--smoke); }
+  .t-fight { background: #0ea5e91f; color: var(--fight); }
 
   /* ---------- Video + cảnh báo */
   .live { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: 18px; }
@@ -128,7 +130,7 @@
   .ev .meta { font-size: 12px; color: var(--muted); }
   .tag { display: inline-flex; align-items: center; gap: 5px; padding: 2px 9px; border-radius: 99px; font-size: 12px; font-weight: 600;
          background: color-mix(in srgb, var(--c) 18%, transparent); color: var(--c); }
-  .c-phone { --c: var(--phone); } .c-head_down { --c: var(--head); } .c-sleeping { --c: var(--sleep); }
+  .c-phone { --c: var(--phone); } .c-head_down { --c: var(--head); } .c-sleeping { --c: var(--sleep); } .c-fighting { --c: var(--fight); } .c-smoking { --c: var(--smoke); }
   .empty { margin: auto; text-align: center; color: var(--muted); padding: 30px 10px; }
   .empty .big { width: 54px; height: 54px; margin: 0 auto 10px; border-radius: 16px; display: grid; place-items: center;
                 background: #22c55e1a; color: var(--ok); }
@@ -286,6 +288,8 @@
   <symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/></symbol>
   <symbol id="i-alert" viewBox="0 0 24 24"><path d="m21.7 18-8-14a2 2 0 0 0-3.5 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3"/><path d="M12 9v4M12 17h.01"/></symbol>
   <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 17V3"/><path d="m6 11 6 6 6-6"/><path d="M19 21H5"/></symbol>
+  <symbol id="i-smoke" viewBox="0 0 24 24"><path d="M2 16h14v4H2zM18 16v4M22 16v4"/><path d="M18 12c0-2 2-2 2-4s-2-2-2-4"/></symbol>
+  <symbol id="i-fight" viewBox="0 0 24 24"><path d="m14.5 17.5 3 3 3-3M17.5 20.5V9a3 3 0 0 0-3-3h-1"/><path d="m9.5 6.5-3-3-3 3M6.5 3.5V15a3 3 0 0 0 3 3h1"/></symbol>
   <symbol id="i-moon" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></symbol>
   <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M6.3 17.7l-1.4 1.4M19.1 4.9l-1.4 1.4"/></symbol>
   <symbol id="i-send" viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></symbol>
@@ -332,6 +336,8 @@
         <div class="card kpi"><div class="ic t-phone"><svg class="i"><use href="#i-phone"/></svg></div><div><div class="v" id="c-phone">0</div><div class="l">Dùng điện thoại</div></div></div>
         <div class="card kpi"><div class="ic t-head"><svg class="i"><use href="#i-down"/></svg></div><div><div class="v" id="c-head_down">0</div><div class="l">Gục đầu xuống bàn</div></div></div>
         <div class="card kpi"><div class="ic t-sleep"><svg class="i"><use href="#i-moon"/></svg></div><div><div class="v" id="c-sleeping">0</div><div class="l">Ngủ gục / ngủ gật</div></div></div>
+        <div class="card kpi"><div class="ic t-fight"><svg class="i"><use href="#i-fight"/></svg></div><div><div class="v" id="c-fighting">0</div><div class="l">Đánh nhau</div></div></div>
+        <div class="card kpi"><div class="ic t-smoke"><svg class="i"><use href="#i-smoke"/></svg></div><div><div class="v" id="c-smoking">0</div><div class="l">Hút thuốc</div></div></div>
       </div>
 
       <div class="live">
@@ -387,7 +393,7 @@
       <div class="stats-grid">
           <div class="card">
             <div class="card-h"><h2>Cảnh báo theo phút</h2><div class="spacer"></div>
-              <div class="legend"><span><i style="background:var(--phone)"></i>Điện thoại</span><span><i style="background:var(--head)"></i>Gục đầu</span><span><i style="background:var(--sleep)"></i>Ngủ gục</span></div></div>
+              <div class="legend"><span><i style="background:var(--phone)"></i>Điện thoại</span><span><i style="background:var(--head)"></i>Gục đầu</span><span><i style="background:var(--sleep)"></i>Ngủ gục</span><span><i style="background:var(--fight)"></i>Đánh nhau</span><span><i style="background:var(--smoke)"></i>Hút thuốc</span></div></div>
             <div class="card-b"><div class="chart" id="chart"></div><div class="axis" id="axis"></div></div>
           </div>
           <div class="card">
@@ -491,6 +497,8 @@
               <div class="btns">
                 <button onclick="unlockAudio(); playVoice('phone')"><svg class="i"><use href="#i-phone"/></svg>Điện thoại</button>
                 <button onclick="unlockAudio(); playVoice('sleeping')"><svg class="i"><use href="#i-moon"/></svg>Ngủ gật</button>
+                <button onclick="unlockAudio(); playVoice('smoking')"><svg class="i"><use href="#i-smoke"/></svg>Hút thuốc</button>
+                <button onclick="unlockAudio(); playVoice('fighting')"><svg class="i"><use href="#i-fight"/></svg>Đánh nhau</button>
                 <button onclick="unlockAudio(); playVoice('head_down')"><svg class="i"><use href="#i-down"/></svg>Gục xuống bàn</button>
               </div>
             </div>
@@ -548,9 +556,9 @@
 
 <script>
 const $ = id => document.getElementById(id);
-const COLORS = { phone: "var(--phone)", head_down: "var(--head)", sleeping: "var(--sleep)" };
-const SHORT = { phone: "Điện thoại", head_down: "Gục đầu", sleeping: "Ngủ gục" };
-const ICON = { phone: "i-phone", head_down: "i-down", sleeping: "i-moon" };
+const COLORS = { phone: "var(--phone)", head_down: "var(--head)", sleeping: "var(--sleep)", fighting: "var(--fight)", smoking: "var(--smoke)" };
+const SHORT = { phone: "Điện thoại", head_down: "Gục đầu", sleeping: "Ngủ gục", fighting: "Đánh nhau", smoking: "Hút thuốc" };
+const ICON = { phone: "i-phone", head_down: "i-down", sleeping: "i-moon", fighting: "i-fight", smoking: "i-smoke" };
 const icon = (id, size = 14) => `<svg class="i" style="width:${size}px;height:${size}px"><use href="#${id}"/></svg>`;
 let lastId = 0, sound = false, info = null, toastTimer, allEvents = [];
 
@@ -593,7 +601,7 @@ setInterval(() => $("clock").textContent = new Date().toLocaleString("vi-VN", { 
 
 // ---------- âm thanh cảnh báo (Web Audio + giọng nói, không cần file mp3)
 // Trình duyệt chỉ cho phát âm thanh sau lần chạm/bấm đầu tiên vào trang.
-const TONES = { phone: [1000, 2], head_down: [800, 2], sleeping: [1300, 3] };
+const TONES = { phone: [1000, 2], head_down: [800, 2], sleeping: [1300, 3], fighting: [1500, 4], smoking: [1700, 3] };
 const load = (k, d) => { try { const v = localStorage.getItem(k); return v === null ? d : v === "1"; } catch { return d; } };
 const save = (k, v) => { try { localStorage.setItem(k, v ? "1" : "0"); } catch {} };
 let audioCtx, voice = load("voice", true);
@@ -762,12 +770,13 @@ function fullscreen() { const s = $("stage"); document.fullscreenElement ? docum
 async function loadStats() {
   const s = await api("/api/stats").catch(() => null);
   if (!s) return;
-  const keys = ["phone", "head_down", "sleeping"];
-  const max = Math.max(1, ...s.timeline.map(b => b.phone + b.head_down + b.sleeping));
+  const keys = ["phone", "head_down", "sleeping", "fighting", "smoking"];
+  const sumOf = o => keys.reduce((a, k) => a + (o[k] || 0), 0);
+  const max = Math.max(1, ...s.timeline.map(sumOf));
   $("chart").innerHTML = s.timeline.map(b => {
-    const total = b.phone + b.head_down + b.sleeping;
+    const total = sumOf(b);
     const segs = total ? keys.filter(k => b[k]).map(k => `<div style="height:${b[k] / max * 100}%;background:${COLORS[k]}"></div>`).join("") : `<div class="stub"></div>`;
-    return `<div class="bar" data-tip="${b.label} · ${b.phone} điện thoại · ${b.head_down} gục đầu · ${b.sleeping} ngủ">${segs}</div>`;
+    return `<div class="bar" data-tip="${b.label} · ${b.phone} điện thoại · ${b.head_down} gục đầu · ${b.sleeping} ngủ · ${b.fighting || 0} đánh nhau · ${b.smoking || 0} hút thuốc">${segs}</div>`;
   }).join("");
   const tl = s.timeline;
   $("axis").innerHTML = [0, 0.25, 0.5, 0.75, 1].map(f => `<span>${tl[Math.min(tl.length - 1, Math.round(f * (tl.length - 1)))].label}</span>`).join("");
@@ -782,8 +791,8 @@ async function loadStats() {
       <span class="n">${totals[k]}</span><span class="muted" style="width:44px;text-align:right">${sum ? Math.round(totals[k] / sum * 100) : 0}%</span></div>`).join("");
 
   $("topBody").innerHTML = s.students.length ? s.students.map(r => {
-    const t = r.phone + r.head_down + r.sleeping;
-    return `<tr><td><b>#${r.student}</b></td><td><div class="meter">${keys.map(k => `<div style="width:${r[k] / t * 100}%;background:${COLORS[k]}" title="${SHORT[k]}: ${r[k]}"></div>`).join("")}</div></td><td class="num"><b>${t}</b></td></tr>`;
+    const t = sumOf(r);
+    return `<tr><td><b>#${r.student}</b></td><td><div class="meter">${keys.map(k => `<div style="width:${(r[k] || 0) / t * 100}%;background:${COLORS[k]}" title="${SHORT[k]}: ${r[k]}"></div>`).join("")}</div></td><td class="num"><b>${t}</b></td></tr>`;
   }).join("") : `<tr><td colspan="3" class="muted" style="text-align:center;padding:30px">Chưa có cảnh báo</td></tr>`;
 
   $("historyBody").innerHTML = allEvents.length ? allEvents.slice(-50).reverse().map(e =>

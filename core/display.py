@@ -8,6 +8,7 @@ import cv2
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
+from . import signals as sg
 from .rules import BEHAVIOR_NAMES
 
 FONT_CANDIDATES = [
@@ -57,6 +58,12 @@ class Drawer:
         """Vẽ khung + nhãn từng học sinh. header=False khi giao diện đã hiện số liệu riêng (bản web)."""
         labels = []
         warn = 0
+        by_id = {p["id"]: p for p in people}
+        for p in people:
+            other = by_id.get(p.get("fight_with"))
+            if p["active"].get("fighting") and other is not None and p["id"] < other["id"]:
+                cv2.line(frame, tuple(map(int, sg.center(p["box"]))), tuple(map(int, sg.center(other["box"]))),
+                         RED, 3)
         for p in people:
             x0, y0, x1, y1 = map(int, p["box"])
             active = p["active"]

@@ -17,6 +17,8 @@ PHRASES = {
     "phone": "Có học sinh dùng điện thoại",
     "sleeping": "Có học sinh ngủ gật",
     "head_down": "Có học sinh nằm gục xuống bàn",
+    "fighting": "Có học sinh đánh nhau",
+    "smoking": "Có học sinh hút thuốc",
 }
 
 

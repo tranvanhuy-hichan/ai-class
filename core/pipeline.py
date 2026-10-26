@@ -8,6 +8,7 @@ Mỗi khung hình đi qua các bước:
   5. (Tuỳ chọn) Mô hình hành vi tự huấn luyện
   6. Luật thời gian -> quyết định có cảnh báo hay không
 """
+import time
 from pathlib import Path
 
 import cv2
@@ -16,6 +17,7 @@ import yaml
 from ultralytics import YOLO
 
 from . import signals as sg
+from .fight import FightDetector
 from .paths import res
 from .rules import BehaviorRules
 
@@ -184,11 +186,32 @@ class Pipeline:
 
         self.tracker = SpatialTracker()
         self.rules = BehaviorRules(cfg["timing"])
+        self.fight = FightDetector({"keypoint_conf": cfg["detection"]["keypoint_conf"], **cfg.get("fight", {})})
+
+        # Máy yếu: các mô hình phụ (điện thoại, hành vi, mắt) không cần chạy ở mọi khung hình vì hành vi
+        # kéo dài nhiều giây. Chạy thưa hơn và dùng lại kết quả cũ giữa 2 lần chạy.
+        perf = cfg.get("performance", {})
+        self.aux_interval = perf.get("aux_interval_gpu" if self.has_cuda else "aux_interval_cpu", 0.0)
+        self.eye_interval = perf.get("eye_interval_gpu" if self.has_cuda else "eye_interval_cpu", 0.0)
+        self.budget = perf.get("frame_budget_ms", 0) / 1000.0  # 0 = tắt tự giãn khi máy chậm
+        self._clear_cache()
+
+    def _clear_cache(self):
+        self._phone_cache = ([], None)    # (danh sách khung điện thoại, thời điểm chạy)
+        self._custom_cache = ([], None)   # (danh sách (khung, lớp), thời điểm chạy)
+        self._eye_cache = {}              # id -> (xác suất nhắm, thời điểm đo)
+        self._load = 1.0                  # hệ số giãn cách, tăng khi máy không theo kịp
+
+    @staticmethod
+    def _due(last_t, t, interval):
+        return last_t is None or t < last_t or t - last_t >= interval
 
     def reset(self):
         """Gọi khi chuyển sang video mới hoặc đổi camera."""
         self.rules = BehaviorRules(self.cfg["timing"])
         self.tracker.reset()
+        self.fight.reset()
+        self._clear_cache()
         self.pose.predictor = None  # tạo lại bộ theo dõi (ID) từ đầu
 
     # ------------------------------------------------------------------
@@ -201,6 +224,7 @@ class Pipeline:
         """
         det, r = self.cfg["detection"], self.cfg["rules"]
         thr = det["keypoint_conf"]
+        started = time.perf_counter()
 
         # Sử dụng bytetrack để theo dõi ổn định và mượt mà hơn trong lớp học
         res = self.pose.track(frame, persist=True, conf=det["person_conf"], imgsz=det["imgsz"],
@@ -223,14 +247,16 @@ class Pipeline:
                     "signals": {"head_down": is_head_down},
                 })
 
+        self.fight.update(people, t)   # khung xương đã có sẵn nên gần như không tốn thêm thời gian
+
         if people:
-            self._detect_phones(frame, people, det, r, thr)
+            self._detect_phones(frame, people, det, r, thr, t)
             if self.face is not None:
-                self._check_eyes_mediapipe(frame, people, r, thr)
+                self._check_eyes_mediapipe(frame, people, r, thr, t)
             elif self.eye is not None:
                 self._check_eyes(frame, people, r, thr)
             if self.custom is not None:
-                self._custom_behaviors(frame, people, det)
+                self._custom_behaviors(frame, people, det, t)
 
         alerts = []
         for p in people:
@@ -238,18 +264,30 @@ class Pipeline:
             for b in new:
                 alerts.append({"id": p["id"], "behavior": b, "duration": p["active"][b], "box": p["box"]})
         self.rules.forget_old(t)
+        self._adapt(time.perf_counter() - started)
         return people, alerts
 
-    # ------------------------------------------------------------------
-    def _detect_phones(self, frame, people, det, r, thr):
-        """Nhận diện điện thoại và liên kết với học sinh tương ứng."""
-        phone_conf = det.get("phone_conf", 0.15)
-        res = self.obj.predict(frame, classes=[COCO_PHONE], conf=phone_conf, imgsz=det["imgsz"],
-                               device=self.device, verbose=False)[0]
-        if res.boxes is None or len(res.boxes) == 0:
+    def _adapt(self, elapsed):
+        """Máy chậm hơn ngân sách thời gian thì giãn thêm các mô hình phụ (tối đa x4); đỡ lại thì thu hẹp dần."""
+        if self.budget <= 0:
             return
+        if elapsed > self.budget:
+            self._load = min(4.0, self._load * 1.25)
+        else:
+            self._load = max(1.0, self._load * 0.95)
 
-        for box in res.boxes.xyxy.cpu().numpy():
+    # ------------------------------------------------------------------
+    def _detect_phones(self, frame, people, det, r, thr, t):
+        """Nhận diện điện thoại và liên kết với học sinh tương ứng."""
+        boxes, last = self._phone_cache
+        if self._due(last, t, self.aux_interval * self._load):
+            phone_conf = det.get("phone_conf", 0.15)
+            res = self.obj.predict(frame, classes=[COCO_PHONE], conf=phone_conf, imgsz=det["imgsz"],
+                                   device=self.device, verbose=False)[0]
+            boxes = res.boxes.xyxy.cpu().numpy() if res.boxes is not None and len(res.boxes) else []
+            self._phone_cache = (boxes, t)
+
+        for box in boxes:
             c = sg.center(box)
             best_person = None
             best_dist = float("inf")
@@ -278,19 +316,28 @@ class Pipeline:
                 best_person["signals"]["phone"] = True
                 best_person.setdefault("phone_boxes", []).append(box)
 
-    def _check_eyes_mediapipe(self, frame, people, r, thr):
+    def _check_eyes_mediapipe(self, frame, people, r, thr, t):
         """Kiểm tra nhắm mắt bằng MediaPipe. Bỏ qua học sinh đã gục đầu để tiết kiệm tài nguyên."""
         import mediapipe as mp
         min_eye_dist = r.get("min_eye_distance_px", 16)
         max_faces_per_frame = 4 if not self.has_cuda else 20
         checked_faces = 0
+        interval = self.eye_interval * self._load
+        alive = {p["id"] for p in people}
+        self._eye_cache = {k: v for k, v in self._eye_cache.items() if k in alive}
 
-        for p in people:
+        # Người có số đo cũ nhất được đo trước, để lớp đông thì mọi người đều lần lượt được đo
+        for p in sorted(people, key=lambda p: self._eye_cache.get(p["id"], (0, -1e9))[1]):
             # Học sinh đã gục đầu thì chắc chắn đang gục/ngủ, không cần chạy MediaPipe
             if p["signals"].get("head_down"):
                 continue
+            cached = self._eye_cache.get(p["id"])
+            if cached is not None and not self._due(cached[1], t, interval):
+                p["eye_closed_prob"] = cached[0]
+                p["signals"]["eyes_closed"] = cached[0] > r["blink_threshold"]
+                continue
             if checked_faces >= max_faces_per_frame:
-                break
+                continue
 
             box = sg.head_box(frame, p["kpts"], thr, min_eye_dist)
             if box is None:
@@ -304,6 +351,7 @@ class Pipeline:
                 continue
             score = {b.category_name: b.score for b in res.face_blendshapes[0]}
             closed = (score.get("eyeBlinkLeft", 0.0) + score.get("eyeBlinkRight", 0.0)) / 2
+            self._eye_cache[p["id"]] = (closed, t)
             p["eye_closed_prob"] = closed
             p["signals"]["eyes_closed"] = closed > r["blink_threshold"]
 
@@ -321,12 +369,22 @@ class Pipeline:
             p["eye_closed_prob"] = prob
             p["signals"]["eyes_closed"] = prob > r["eye_closed_prob"]
 
-    def _custom_behaviors(self, frame, people, det):
-        res = self.custom.predict(frame, conf=det["person_conf"], imgsz=det["imgsz"],
-                                  device=self.device, verbose=False)[0]
-        if res.boxes is None or len(res.boxes) == 0:
-            return
-        for box, cls in zip(res.boxes.xyxy.cpu().numpy(), res.boxes.cls.int().cpu().tolist()):
+    def _custom_behaviors(self, frame, people, det, t):
+        dets, last = self._custom_cache
+        if self._due(last, t, self.aux_interval * self._load):
+            # Điếu thuốc nhỏ nên điểm tin cậy thấp hơn các hành vi khác: chạy với ngưỡng thấp nhất rồi lọc từng lớp
+            smoke_conf = det.get("smoking_conf", 0.30)
+            res = self.custom.predict(frame, conf=min(det["person_conf"], smoke_conf), imgsz=det["imgsz"],
+                                      device=self.device, verbose=False)[0]
+            dets = []
+            if res.boxes is not None and len(res.boxes):
+                for box, cls, cf in zip(res.boxes.xyxy.cpu().numpy(), res.boxes.cls.int().cpu().tolist(),
+                                        res.boxes.conf.cpu().tolist()):
+                    need = smoke_conf if self.custom_map.get(cls) == "smoking" else det["person_conf"]
+                    if cf >= need:
+                        dets.append((box, cls))
+            self._custom_cache = (dets, t)
+        for box, cls in dets:
             behavior = self.custom_map.get(cls)
             if not behavior:
                 continue

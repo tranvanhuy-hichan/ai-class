@@ -19,7 +19,7 @@ from .paths import res
 
 SOUNDS = res("web/sounds")
 # Dự phòng khi chưa có file giọng đọc: (tần số Hz, số tiếng bíp)
-TONES = {"phone": (1000, 2), "head_down": (800, 2), "sleeping": (1300, 3)}
+TONES = {"phone": (1000, 2), "head_down": (800, 2), "sleeping": (1300, 3), "fighting": (1500, 4), "smoking": (1700, 3)}
 _queue = queue.Queue()
 _pending = set()
 _worker = None

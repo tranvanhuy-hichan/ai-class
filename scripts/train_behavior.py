@@ -26,6 +26,8 @@ def main():
     ap.add_argument("--imgsz", type=int, default=640)
     ap.add_argument("--batch", type=int, default=16)
     ap.add_argument("--device", default="")
+    ap.add_argument("--name", default="behavior", help="Tên thư mục kết quả trong runs/")
+    ap.add_argument("--no-install", action="store_true", help="Không chép kết quả đè lên weights/behavior.pt")
     a = ap.parse_args()
 
     model_path = a.model
@@ -34,12 +36,15 @@ def main():
 
     model = YOLO(model_path)
     model.train(data=a.data, epochs=a.epochs, imgsz=a.imgsz, batch=a.batch, device=a.device or None,
-                project=str(ROOT / "runs"), name="behavior", exist_ok=True)
-    m = model.val(project=str(ROOT / "runs"), name="behavior_val", exist_ok=True)
+                project=str(ROOT / "runs"), name=a.name, exist_ok=True)
+    m = model.val(project=str(ROOT / "runs"), name=a.name + "_val", exist_ok=True)
     print(f"\nmAP50 = {m.box.map50:.3f} | mAP50-95 = {m.box.map:.3f}")
     print("Các lớp của mô hình:", model.names)
-    print("Biểu đồ kết quả (đưa vào báo cáo KHKT): runs/behavior/ (results.png, confusion_matrix.png, ...)")
+    print("Biểu đồ kết quả (đưa vào báo cáo KHKT): runs/<--name>/ (results.png, confusion_matrix.png, ...)")
 
+    if a.no_install:
+        print(f"Mô hình tốt nhất: {model.trainer.best} (chưa chép vào weights/)")
+        return
     (ROOT / "weights").mkdir(exist_ok=True)
     shutil.copy(model.trainer.best, ROOT / "weights/behavior.pt")
     print("Đã lưu mô hình: weights/behavior.pt")

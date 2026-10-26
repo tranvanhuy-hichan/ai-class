@@ -58,7 +58,7 @@ STORAGE_DEFAULTS = {"save_snapshots": True, "keep_days": 7, "max_storage_mb": 10
 # Mã bí mật trong mã QR của điện thoại: chỉ ai quét mã mới gửi hình vào được. Đổi mỗi lần mở app.
 PHONE_KEY = secrets.token_urlsafe(8)
 # Trùng với câu trong file âm thanh (scripts/make_voices.py)
-ANNOUNCE = {"phone": "dùng điện thoại", "head_down": "nằm gục xuống bàn", "sleeping": "ngủ gật"}
+ANNOUNCE = {"phone": "dùng điện thoại", "head_down": "nằm gục xuống bàn", "sleeping": "ngủ gật", "fighting": "đánh nhau", "smoking": "hút thuốc"}
 
 # Các tham số giáo viên chỉnh được trên web: (nhóm trong config.yaml, khoá)
 TUNABLE = {
