@@ -44,6 +44,7 @@ from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 from core import cleanup
+from core.fight import FightDetector
 from core.focus import FocusTracker, label as focus_label
 from core.camera import PushSource, VideoSource
 from core.display import Drawer, EventLogger, FPSMeter
@@ -266,6 +267,7 @@ class Camera:
         self.last_frame = 0.0
         self.watch_ts = 0.0     # lần cuối có người xem camera này (video trực tiếp / ảnh xem trước)
         self.last_t = -1e9
+        self.motion_t, self.boost_until = -1e9, -1e9   # tăng tốc xử lý tạm thời (đánh nhau) đến thời điểm này
         self.last_people = []   # kết quả AI gần nhất, vẽ lên video xem giữa 2 lần xử lý
         self.touching = False    # có 2 người đứng sát/chồng nhau (nghi xô đẩy) -> cần xử lý dày hơn
         self.prev_small = None
@@ -344,6 +346,8 @@ class Camera:
 
     def _show_live(self, frame):
         """Video cho người xem: chạy mượt theo tốc độ camera, vẽ khung/nhãn từ kết quả AI gần nhất."""
+        if cv2.mean(frame)[:3] == (0.0, 0.0, 0.0):   # khung đen hoàn toàn (webcam mới mở): giữ hình trước đó
+            return
         people = self.last_people if time.time() - self.last_frame < STALE_OVERLAY else []
         eng = self.engine
         self._show(eng.drawer.draw(self._prep(frame), people, None, header=False,
@@ -375,6 +379,7 @@ class Camera:
             self.error, self.running, self.state = f"Không nạp được mô hình AI: {e}", False, "error"
             return
         self.state = "running"
+        self.last_t, self.last_people, self.empty_since, self.boost_until, self.motion_t = -1e9, [], None, -1e9, -1e9   # xóa trạng thái của nguồn trước
         fps_meter = FPSMeter()
         t0, idx = time.time(), 0
         src = self.src
@@ -391,13 +396,21 @@ class Camera:
                 src = self.src = VideoSource(self.source)
                 self.pipe.reset()
                 t0, idx = time.time(), 0
+                self.last_t = self.boost_until = self.motion_t = -1e9   # video phát lại từ đầu: thời gian quay về 0
                 continue
 
+            if cv2.mean(frame)[:3] == (0.0, 0.0, 0.0):   # khung đen hoàn toàn: bỏ qua, không xử lý
+                continue
             t = time.time() - t0 if src.live else idx / src.fps
             idx += 1
             started = time.time()
             max_fps = eng.settings.get("max_fps", DEFAULT_FPS)
-            if not src.live and max_fps and t - self.last_t < 1.0 / max_fps - 1e-6:
+            if not src.live and max_fps and max_fps < BOOST_FPS and self.touching and t - self.motion_t >= 0.2:
+                self.motion_t = t
+                if self._moving(frame):   # video demo: cũng tự tăng tốc khi nghi xô đẩy
+                    self.boost_until = t + BOOST_HOLD
+            eff_fps = BOOST_FPS if (max_fps and max_fps < BOOST_FPS and t < self.boost_until) else max_fps
+            if not src.live and eff_fps and 0 <= t - self.last_t < 1.0 / eff_fps - 1e-6:
                 if self.watched():
                     self._show_live(frame)
                 wait = t - (time.time() - t0)   # video demo: bỏ bớt khung cho đúng tốc độ xử lý, vẫn phát đúng tốc độ thật
@@ -408,7 +421,9 @@ class Camera:
             if src.live and self.empty_since is not None and started - self.empty_since > IDLE_AFTER:
                 # Lớp trống lâu thì chỉ kiểm tra 2 lần/giây, nhường máy cho camera khác; có người là chạy lại bình thường
                 if started - self.last_frame < IDLE_INTERVAL:
-                    time.sleep(0.05)
+                    if self.watched():
+                        self._show_live(frame)
+                    time.sleep(0.03)
                     continue
             try:
                 frame = self._prep(frame)
@@ -429,7 +444,7 @@ class Camera:
                     self._show(out)
             self.last_frame = time.time()
             self.empty_since = None if people else (self.empty_since or self.last_frame)
-            self.touching = any(sg.box_iou(a["box"], b["box"]) > 0.05 for i, a in enumerate(people) for b in people[i + 1:])
+            self.touching = any(FightDetector._touching(a["box"], b["box"], 0.02) for i, a in enumerate(people) for b in people[i + 1:])
 
             for a in alerts:
                 eng.on_alert(self, a, out)
@@ -449,15 +464,18 @@ class Camera:
             if src.live and max_fps:
                 # Mọi hành vi kéo dài vài giây nên xử lý thưa là đủ. Riêng đánh nhau cần hình dày hơn: khi có người đứng
                 # sát nhau VÀ hình đang chuyển động mạnh thì xử lý ngay (tối đa BOOST_FPS hình/giây) rồi lại nghỉ.
-                deadline = started + 1.0 / max_fps
+                now_t = time.time() - t0
+                boosted = max_fps < BOOST_FPS and now_t < self.boost_until
+                deadline = started + 1.0 / (BOOST_FPS if boosted else max_fps)
                 while self.running and time.time() < deadline:
                     tick = time.time()
                     watched = self.watched()
-                    frame2 = src.latest() if (watched or (max_fps < BOOST_FPS and self.touching)) else None
+                    frame2 = src.latest() if (watched or (max_fps < BOOST_FPS and self.touching and not boosted)) else None
                     if frame2 is not None:
                         if watched:
                             self._show_live(frame2)
-                        if max_fps < BOOST_FPS and self.touching and self._moving(frame2):
+                        if max_fps < BOOST_FPS and self.touching and not boosted and self._moving(frame2):
+                            self.boost_until = time.time() - t0 + BOOST_HOLD
                             break
                     time.sleep(max(0.0, min(deadline - time.time(), (1.0 / DISPLAY_FPS if watched else 1.0 / BOOST_FPS) - (time.time() - tick))))
             if not src.live:  # video: phát đúng tốc độ thật để demo trông tự nhiên
@@ -469,6 +487,7 @@ class Camera:
 DISPLAY_FPS = 20      # tốc độ video cho người xem (độc lập với tốc độ AI)
 STALE_OVERLAY = 2.5   # khung/nhãn AI cũ hơn mức này (giây) thì không vẽ nữa
 BOOST_FPS = 5         # khi nghi xô đẩy: xử lý dày tới mức này dù đang đặt thấp hơn
+BOOST_HOLD = 3.0       # giữ chế độ xử lý dày thêm ngần này giây sau lần phát hiện cuối
 MOTION_THRESHOLD = 6.0  # độ chênh trung bình (0-255) giữa 2 ảnh liên tiếp coi là chuyển động mạnh
 DEFAULT_FPS = 5       # số hình xử lý mỗi giây cho mỗi camera (0 = không giới hạn)
 MAX_WIDTH = 1280      # khung hình rộng hơn mức này được thu nhỏ trước khi xử lý
