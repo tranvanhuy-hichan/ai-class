@@ -59,7 +59,7 @@ def shoulders(kpts, thr, box=None):
 def head_ratio(kpts, thr, box=None):
     """Đầu cao hơn vai bao nhiêu, tính theo đơn vị "độ rộng vai".
 
-    Ngồi thẳng: ~0.5-1.0. Gục xuống bàn: gần 0 hoặc âm.
+    Ngồi thẳng: ~0.5-1.0. Cúi đọc/viết bài: vẫn dương (đầu còn cao hơn vai). Nằm gục xuống bàn: <= 0 (đầu ngang hoặc thấp hơn vai).
     Thấy vai mà không thấy điểm nào trên mặt -> mặt đang úp xuống bàn -> trả về -1.0.
     Nếu học sinh gục thấp trong khung người -> trả về <= 0.
     """
@@ -93,7 +93,7 @@ def head_ratio(kpts, thr, box=None):
         box_h = max(1.0, box[3] - box[1])
         head_rel_y = (head_y - box[1]) / box_h
         if head_rel_y > 0.45:
-            return min(ratio, 0.05)
+            return min(ratio, 0.0)
 
     return ratio
 

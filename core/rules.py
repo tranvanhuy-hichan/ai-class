@@ -27,17 +27,27 @@ class Timer:
     def __init__(self):
         self.start = None
         self.last = None
+        self.active_time = 0.0   # tổng thời gian tín hiệu THỰC SỰ bật (không tính các đoạn mất tín hiệu được nối)
 
     def update(self, active, t, grace):
         if active:
             if self.start is None or t - self.last > grace:
                 self.start = t
+                self.active_time = 0.0
+            else:
+                self.active_time += t - self.last
             self.last = t
         elif self.start is not None and t - self.last > grace:
             self.start = self.last = None
+            self.active_time = 0.0
 
     def duration(self):
-        return 0.0 if self.start is None else self.last - self.start
+        """Chỉ tính thời gian tín hiệu bật thật sự, nên phát hiện chập chờn không cộng dồn thành 'kéo dài'.
+        Giữ đủ 70% khoảng thời gian để một vài khung bị bỏ sót không làm mất bộ đếm."""
+        if self.start is None:
+            return 0.0
+        span = self.last - self.start
+        return span if self.active_time >= 0.7 * span else self.active_time
 
 
 class Student:

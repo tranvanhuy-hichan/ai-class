@@ -1,6 +1,6 @@
 # Tự build bộ cài trên máy của GitHub (miễn phí cho repo công khai):
 #   - Windows: dist/LopHocAI-Setup-<phiên bản>.exe
-#   - Ubuntu:  dist/lophocai_<phiên bản>_amd64.deb
+#   (bản Ubuntu/Linux build trên máy: ./packaging/build_linux.sh, không build trên GitHub Actions)
 # Chạy tay: tab Actions -> "Build bộ cài" -> Run workflow.
 # Tạo bản phát hành: git tag v1.0.0 && git push origin v1.0.0  (bộ cài được gắn vào mục Releases)
 name: Build bộ cài
@@ -23,7 +23,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, ubuntu-latest]
+        os: [windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -47,10 +47,6 @@ jobs:
           pip install ultralytics opencv-python pillow pyyaml lap mediapipe fastapi "uvicorn[standard]" \
                       python-multipart qrcode cryptography soundfile requests pyinstaller
 
-      - name: Build Ubuntu (.deb)
-        if: runner.os == 'Linux'
-        run: PY=python ./packaging/build_linux.sh
-
       - name: Build Windows (.exe)
         if: runner.os == 'Windows'
         shell: bash
@@ -65,7 +61,6 @@ jobs:
           name: LopHocAI-${{ runner.os }}
           path: |
             dist/*.exe
-            dist/*.deb
           if-no-files-found: error
 
       - name: Gắn vào bản phát hành
@@ -74,4 +69,3 @@ jobs:
         with:
           files: |
             dist/*.exe
-            dist/*.deb

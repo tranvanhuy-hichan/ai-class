@@ -1,5 +1,7 @@
 """Vẽ kết quả lên khung hình, phát âm thanh, ghi nhật ký cảnh báo."""
 import csv
+import re
+import threading
 import time
 from datetime import datetime
 from pathlib import Path
@@ -20,6 +22,20 @@ FONT_CANDIDATES = [
 ]
 
 GREEN, ORANGE, RED = (0, 200, 0), (0, 165, 255), (0, 0, 255)  # BGR
+
+# Nối các điểm khung xương COCO-17 (mũi, mắt, tai, vai, khuỷu, cổ tay, hông, gối, cổ chân)
+SKELETON = ((0, 1), (0, 2), (1, 3), (2, 4), (5, 6), (5, 7), (7, 9), (6, 8), (8, 10),
+            (5, 11), (6, 12), (11, 12), (11, 13), (13, 15), (12, 14), (14, 16))
+
+
+def draw_skeleton(frame, kpts, color, thr=0.30):
+    pts = {i: (int(k[0]), int(k[1])) for i, k in enumerate(kpts) if k[2] >= thr}
+    for a, b in SKELETON:
+        if a in pts and b in pts:
+            cv2.line(frame, pts[a], pts[b], color, 2, cv2.LINE_AA)
+    for pt in pts.values():
+        cv2.circle(frame, pt, 4, (255, 255, 255), -1, cv2.LINE_AA)
+        cv2.circle(frame, pt, 4, color, 1, cv2.LINE_AA)
 
 
 def load_font(path, size):
@@ -54,7 +70,7 @@ class Drawer:
         d.text((x + h, y + 4), text, font=self.font, fill=(255, 255, 255, 255))
         return h
 
-    def draw(self, frame, people, fps=None, header=True):
+    def draw(self, frame, people, fps=None, header=True, skeleton=False):
         """Vẽ khung + nhãn từng học sinh. header=False khi giao diện đã hiện số liệu riêng (bản web)."""
         labels = []
         warn = 0
@@ -74,6 +90,8 @@ class Drawer:
             else:
                 color = GREEN
             cv2.rectangle(frame, (x0, y0), (x1, y1), color, 2)
+            if skeleton and p.get("kpts") is not None:
+                draw_skeleton(frame, p["kpts"], color)
             for b in p.get("phone_boxes", []):
                 cv2.rectangle(frame, tuple(map(int, b[:2])), tuple(map(int, b[2:])), (255, 0, 255), 2)
             label = f"#{p['id']}"
@@ -108,21 +126,27 @@ class EventLogger:
         self.file = open(self.path, "a", newline="", encoding="utf-8-sig")
         self.writer = csv.writer(self.file)
         if new:
-            self.writer.writerow(["thoi_gian", "id_hoc_sinh", "hanh_vi", "keo_dai_giay", "anh"])
+            self.writer.writerow(["thoi_gian", "id_hoc_sinh", "hanh_vi", "keo_dai_giay", "anh", "luot_chay", "camera"])
         self.counts = {}
+        self.lock = threading.Lock()   # nhiều camera cùng ghi nhật ký
+        # Mỗi lần mở ứng dụng là một "lượt chạy"; ghi vào từng dòng để xem lại lịch sử theo lượt
+        self.session = datetime.now().isoformat(timespec="seconds")
 
-    def log(self, alert, frame):
+    def log(self, alert, frame, camera="", cam_id=""):
         now = datetime.now()
         snap = ""
+        tag = f"_{re.sub(r'[^A-Za-z0-9]', '', cam_id)}" if cam_id else ""
         if self.save_snapshots:
-            snap = str(self.snap_dir / f"{now:%Y%m%d_%H%M%S}_id{alert['id']}_{alert['behavior']}.jpg")
+            snap = str(self.snap_dir / f"{now:%Y%m%d_%H%M%S}{tag}_id{alert['id']}_{alert['behavior']}.jpg")
             cv2.imwrite(snap, frame)
-        self.writer.writerow([now.isoformat(timespec="seconds"), alert["id"],
-                              BEHAVIOR_NAMES[alert["behavior"]], f"{alert['duration']:.1f}", snap])
-        self.file.flush()
-        self.counts[alert["behavior"]] = self.counts.get(alert["behavior"], 0) + 1
-        print(f"[!] {now:%H:%M:%S} Học sinh #{alert['id']}: {BEHAVIOR_NAMES[alert['behavior']]} "
-              f"({alert['duration']:.0f}s)")
+        with self.lock:
+            self.writer.writerow([now.isoformat(timespec="seconds"), alert["id"],
+                                  BEHAVIOR_NAMES[alert["behavior"]], f"{alert['duration']:.1f}", snap,
+                                  self.session, camera])
+            self.file.flush()
+            self.counts[alert["behavior"]] = self.counts.get(alert["behavior"], 0) + 1
+        print(f"[!] {now:%H:%M:%S} {camera + ': ' if camera else ''}Học sinh #{alert['id']}: "
+              f"{BEHAVIOR_NAMES[alert['behavior']]} ({alert['duration']:.0f}s)")
         return snap
 
     def close(self):

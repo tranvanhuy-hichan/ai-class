@@ -17,21 +17,21 @@ models:
 detection:
   person_conf: 0.40            # Lọc bỏ vật thể treo tường (áo khoác, ghế)
   smoking_conf: 0.50           # Ngưỡng riêng cho điếu thuốc. 0.50 báo nhầm ~2% ảnh lớp học, 0.30 báo nhầm ~6% (đã đo)
-  phone_conf: 0.15             # Bắt điện thoại siêu nhạy (kể cả mặt lưng, góc nghiêng)
+  phone_conf: 0.25             # Điện thoại (0.15 bắt được nhiều hơn nhưng hay nhầm vật khác như hộp bút, sổ, thước)
   keypoint_conf: 0.30          # Nhận diện khung xương nhạy hơn
   imgsz: 960                   # Tối ưu cho lớp học: 960
 
 performance:                   # Tối ưu cho máy yếu (giây; 0 = chạy mọi khung hình)
   aux_interval_cpu: 0.5        # Máy không GPU: tìm điện thoại / mô hình hành vi mỗi 0.5 giây
-  aux_interval_gpu: 0.0        # Máy có GPU: chạy mọi khung hình
+  aux_interval_gpu: 0.2        # Máy có GPU: tìm điện thoại / hành vi 5 lần mỗi giây (các hành vi kéo dài nhiều giây, chạy mọi khung là thừa). 0 = mọi khung
   eye_interval_cpu: 0.7        # Đo độ nhắm mắt của mỗi học sinh mỗi 0.7 giây
-  eye_interval_gpu: 0.0
+  eye_interval_gpu: 0.3        # Đo nhắm mắt khoảng 3 lần mỗi giây
   frame_budget_ms: 250         # Một khung xử lý quá 250 ms thì tự giãn thêm các mô hình phụ (tối đa x4). 0 = tắt
 
 rules:
   # Tỉ lệ (khoảng cách đầu cao hơn vai) / (độ rộng vai).
-  # Ngồi thẳng ~0.5-1.0; gục đầu xuống bàn thì đầu gần/thấp hơn vai -> nhỏ.
-  head_down_ratio: 0.20        # 0.20 cân bằng tối ưu giữa ngồi học và gục đầu
+  # Ngồi thẳng ~0.5-1.0; cúi đầu đọc/viết bài vẫn dương; chỉ khi NẰM GỤC xuống bàn (đầu ngang hoặc thấp hơn vai) mới <= 0.
+  head_down_ratio: 0.05        # Dưới mức này mới coi là nằm gục. Tăng lên (vd 0.15) nếu muốn nhạy hơn
   # Điện thoại được tính là "đang cầm" nếu cách cổ tay/bàn < hệ số * độ rộng vai
   phone_wrist_factor: 1.10
   # Mắt được coi là nhắm nếu điểm nhắm mắt > ngưỡng
@@ -42,10 +42,10 @@ rules:
   min_eye_distance_px: 16
 
 timing:                        # Hành vi phải kéo dài bao lâu (giây) mới cảnh báo
-  phone: 1.5                   # 1.5 giây cầm điện thoại -> cảnh báo ngay
-  head_down: 2.5               # 2.5 giây cúi đầu -> cảnh báo gục đầu
-  sleeping: 6.0                # Gục đầu liên tục >= 6s -> cảnh báo ngủ gục (rõ ràng, không phải chờ lâu)
-  eyes_closed: 2.5             # Nhắm mắt liên tục >= 2.5s -> cảnh báo ngủ gật
+  phone: 2.0                   # 2 giây cầm điện thoại -> cảnh báo
+  head_down: 3.0               # Nằm gục xuống bàn liên tục 3 giây -> cảnh báo
+  sleeping: 10.0               # Nằm gục liên tục >= 10s -> cảnh báo ngủ gật
+  eyes_closed: 10.0            # Nhắm mắt liên tục >= 10s -> cảnh báo ngủ gật (nhìn xuống đọc bài dễ bị đo nhầm là nhắm mắt nên để lâu)
   grace: 1.5                   # Cho phép "mất dấu" 1.5 giây mà không reset bộ đếm
   smoking: 2.0                 # Thấy điếu thuốc ở miệng/tay liên tục 2 giây -> cảnh báo
   fighting: 1.0                # Đánh nhau kéo dài 1 giây (cú đánh đã được đếm trong cửa sổ vài giây) -> cảnh báo

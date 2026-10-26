@@ -38,6 +38,10 @@ class FightDetector:
         self.min_strikes = cfg.get("min_strikes", 3)      # số lần đánh trúng khác thời điểm trong cửa sổ
         self.min_flails = cfg.get("min_flails", 3)        # số lần vung mỗi người khi hai bên sát nhau
         self.kp_conf = cfg.get("keypoint_conf", 0.30)
+        self.strong_conf = cfg.get("flail_conf", 0.50)    # độ tin cậy khớp tay tối thiểu cho luật xô đẩy
+        self.touch_iou = cfg.get("touch_iou", 0.15)       # hai khung chồng nhau tối thiểu để coi là đang xô đẩy
+        self.crowd_size = cfg.get("crowd_size", 5)        # từ số người này trở lên là đám đông: đòi nhiều bằng chứng hơn
+        self.n_people = 0
         self.reset()
 
     def reset(self):
@@ -52,6 +56,7 @@ class FightDetector:
         if self.events and t < self.events[-1][0]:   # thời gian chạy lùi (video phát lại)
             self.reset()
         by_id = {p["id"]: p for p in people}
+        self.n_people = len(people)
         for p in people:
             self._observe(p, people, t)
         while self.events and t - self.events[0][0] > self.window:
@@ -71,7 +76,7 @@ class FightDetector:
         pid, kp = p["id"], p["kpts"]
         sh = sg.shoulders(kp, self.kp_conf, p["box"])
         scale = max(10.0, sh[1] if sh else (p["box"][2] - p["box"][0]) * 0.55)
-        cur = {w: (float(kp[w][0]), float(kp[w][1])) for w in WRISTS if kp[w][2] >= self.kp_conf}
+        cur = {w: (float(kp[w][0]), float(kp[w][1]), float(kp[w][2])) for w in WRISTS if kp[w][2] >= self.kp_conf}
         prev = self.last.get(pid)
         self.last[pid], self.seen[pid] = (t, cur), t
         if prev is None:
@@ -82,12 +87,14 @@ class FightDetector:
         for w, pos in cur.items():
             if w not in prev[1]:
                 continue
-            ox, oy = prev[1][w]
+            ox, oy = prev[1][w][:2]
             speed = ((pos[0] - ox) ** 2 + (pos[1] - oy) ** 2) ** 0.5 / (scale * dt)
             if not self._threshold(dt) <= speed <= MAX_SPEED:
                 continue
             hit = self._target(p, pos, people)
-            self.events.append((t, pid, hit))
+            # Tay chỉ "vung mạnh và chắc chắn" khi nhanh hơn hẳn ngưỡng và khớp tay được thấy rõ (không phải khung xương nhảy)
+            strong = speed >= 1.3 * self.swing_speed and min(pos[2], prev[1][w][2]) >= self.strong_conf
+            self.events.append((t, pid, hit, strong))
 
     def _threshold(self, dt):
         """Máy yếu đo thưa (2-5 FPS) thì tay đã đi và về giữa 2 lần đo, tốc độ thấy được thấp hơn thật.
@@ -97,7 +104,10 @@ class FightDetector:
 
     @staticmethod
     def _target(p, pos, people):
-        """Học sinh khác có thân người chứa vị trí cổ tay (gần tâm nhất nếu nhiều người)."""
+        """Học sinh khác có thân người chứa vị trí cổ tay (gần tâm nhất nếu nhiều người).
+        Cổ tay còn nằm trong thân chính mình (người đứng sát, khung chồng nhau) thì không tính là chạm người khác."""
+        if _inside(torso_box(p["box"]), pos):
+            return None
         best, best_d = None, None
         for q in people:
             if q["id"] == p["id"] or not _inside(torso_box(q["box"]), pos):
@@ -110,26 +120,30 @@ class FightDetector:
 
     def _pairs(self, by_id):
         strikes, flails = {}, {}   # cặp -> tập thời điểm; id -> tập thời điểm
-        for t, a, b in self.events:
+        crowd = self.n_people >= self.crowd_size
+        need_strikes = self.min_strikes + (1 if crowd else 0)
+        need_flails = self.min_flails + (2 if crowd else 0)
+        for t, a, b, strong in self.events:
             if b is not None:
                 strikes.setdefault(frozenset((a, b)), set()).add(round(t, 2))
-            flails.setdefault(a, set()).add(round(t, 2))
+            if strong:
+                flails.setdefault(a, set()).add(round(t, 2))
 
         out = set()
         for pair, times in strikes.items():
-            if len(times) >= self.min_strikes and pair <= by_id.keys():
+            if len(times) >= need_strikes and pair <= by_id.keys():
                 out.add(tuple(sorted(pair)))
         # Hai người sát nhau, cả hai cùng vung tay liên tục (xô đẩy, vật nhau, che đòn)
-        ids = [i for i, ts in flails.items() if len(ts) >= self.min_flails and i in by_id]
+        ids = [i for i, ts in flails.items() if len(ts) >= need_flails and i in by_id]
         for i, a in enumerate(ids):
             for b in ids[i + 1:]:
-                if self._touching(by_id[a]["box"], by_id[b]["box"]):
+                if self._touching(by_id[a]["box"], by_id[b]["box"], self.touch_iou):
                     out.add(tuple(sorted((a, b))))
         return sorted(out)
 
     @staticmethod
-    def _touching(b1, b2):
-        if sg.box_iou(b1, b2) > 0.05:
+    def _touching(b1, b2, iou=0.15):
+        if sg.box_iou(b1, b2) > iou:
             return True
         gap_x = max(b1[0], b2[0]) - min(b1[2], b2[2])
         gap_y = max(b1[1], b2[1]) - min(b1[3], b2[3])

@@ -76,12 +76,23 @@
   .dot.alarm { background: var(--bad); box-shadow: 0 0 0 4px #f43f5e33; animation: blink 1s infinite; }
   @keyframes blink { 50% { opacity: .35; } }
   .page { padding: 22px 28px 40px; display: none; }
-  .page.active { display: block; }
+  .page.active { display: flex; flex-direction: column; min-height: calc(100vh - 69px); }
+  .page.active > * { flex: none; }
+  .page.active > .live, .page.active > .set-wrap, .page.active > .camcards, .page.active > .card { flex: 1; }
+  #page-stats .stats-grid:last-child { flex: 1; }
+  #page-history > .card { display: flex; flex-direction: column; }
+  #page-history .card-b { flex: 1; }
 
   .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); }
   .card-h { display: flex; align-items: center; gap: 10px; padding: 16px 18px 0; }
   .card-h h2 { font-size: 15px; font-weight: 600; margin: 0; }
   .card-h .spacer { flex: 1; }
+  .hist-h { flex-wrap: wrap; row-gap: 10px; }
+  .hist-h h2 { white-space: nowrap; }
+  .hist-h select { width: auto; min-width: 180px; max-width: 100%; }
+  .pager { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 14px; }
+  .pager span { color: var(--muted); font-size: 13px; }
+  .pager button:disabled { opacity: .4; cursor: default; }
   .card-b { padding: 16px 18px 18px; }
   .muted { color: var(--muted); }
 
@@ -165,7 +176,6 @@
   .scroll-x { overflow-x: auto; }
 
   /* ---------- Cài đặt */
-  .settings { display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); gap: 18px; align-items: start; }
   .field { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--border); }
   .field:first-child { border-top: 0; }
   .field label { flex: 1; }
@@ -199,6 +209,114 @@
   .msg.ok { color: var(--ok); } .msg.err { color: var(--bad); }
   .steps { margin: 0; padding-left: 18px; color: var(--muted); font-size: 13px; }
 
+
+  /* ---------- Nhiều camera */
+  .page-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+  .page-head h2 { margin: 0; font-size: 18px; }
+  .page-head .spacer { flex: 1; }
+  .viewcol { min-width: 0; }
+  .camtabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+  .camtabs:empty { display: none; }
+  .camtabs button { padding: 7px 14px; border-radius: 99px; background: var(--surface); }
+  .camtabs button.on { background: var(--accent-soft); border-color: var(--accent); color: var(--text); }
+  .camtabs .dot { margin-right: 2px; }
+  .camtabs .n { background: var(--bad); color: #fff; font-size: 11px; font-weight: 700; padding: 0 7px; border-radius: 99px; }
+  .camgrid { display: none; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 14px; }
+  .camgrid.show { display: grid; }
+  .tile { position: relative; overflow: hidden; border-radius: var(--radius); border: 1px solid var(--border); background: #000; cursor: pointer;
+          box-shadow: var(--shadow); transition: border-color .2s, box-shadow .2s; }
+  .tile:hover { border-color: var(--accent); }
+  .tile.alarm { border-color: var(--bad); box-shadow: 0 0 0 3px #f43f5e55; }
+  .tile img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: contain; background: #05070b; }
+  .tile .tl { position: absolute; top: 10px; left: 10px; display: flex; gap: 6px; }
+  .tile .tr { position: absolute; top: 10px; right: 10px; display: flex; gap: 6px; }
+  .tile .chip { background: #0b0f17b3; border-color: #ffffff1a; color: #e8edf6; padding: 3px 10px; font-size: 12px; backdrop-filter: blur(8px); }
+  .tile .tb { position: absolute; left: 8px; right: 8px; bottom: 8px; display: none; padding: 7px 12px; border-radius: 10px;
+              background: #f43f5ee6; color: #fff; font-weight: 600; font-size: 13px; }
+  .tile.alarm .tb { display: block; }
+  .nocam { display: none; text-align: center; padding: 50px 20px; }
+  .nocam.show { display: block; }
+  .nocam .big { width: 60px; height: 60px; margin: 0 auto 12px; border-radius: 18px; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); }
+  .nocam .big svg { width: 28px; height: 28px; }
+  .nocam h2 { margin: 0 0 6px; }
+  .nocam .hint { margin-bottom: 16px; }
+
+  .camcards { align-content: start; display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+  .camcard { overflow: hidden; display: flex; flex-direction: column; }
+  .camcard .thumb { position: relative; background: #05070b; aspect-ratio: 16 / 9; }
+  .camcard .thumb img { position: relative; z-index: 1; width: 100%; height: 100%; object-fit: contain; display: block; }
+  .camcard .thumb .state { z-index: 2; }
+  .camcard .thumb .ph { position: absolute; inset: 0; display: grid; place-items: center; color: var(--faint); }
+  .camcard .thumb .ph svg { width: 34px; height: 34px; }
+  .camcard .state { position: absolute; top: 10px; left: 10px; }
+  .st { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 99px; font-size: 12px; font-weight: 600; backdrop-filter: blur(8px);
+        background: #0b0f17b3; color: #e8edf6; border: 1px solid #ffffff1a; }
+  .st::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--faint); }
+  .st.running::before { background: var(--ok); } .st.starting::before { background: var(--head); animation: blink 1s infinite; } .st.error::before { background: var(--bad); }
+  .camcard .cb { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 8px; }
+  .camcard .ct { display: flex; align-items: center; gap: 8px; }
+  .camcard .ct b { font-size: 15px; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .camcard .cs { color: var(--muted); font-size: 12.5px; display: flex; gap: 6px; align-items: center; min-width: 0; flex-wrap: nowrap; }
+  .camcard .cs code { flex: 0 1 auto; min-width: 0; }
+  .camcard .cs code { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+  .camcard .cerr { color: var(--bad); font-size: 12.5px; }
+  .camcard .cstats { display: flex; gap: 14px; color: var(--muted); font-size: 13px; }
+  .camcard .cstats b { color: var(--text); }
+  .camcard .cstats .w.on b { color: var(--bad); }
+  .camcard .cbtns { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 2px; }
+  .camcard .auto { margin-left: auto; display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12.5px; }
+  .camadd { border: 2px dashed var(--border); background: transparent; box-shadow: none; display: grid; place-items: center; min-height: 220px; cursor: pointer; color: var(--muted); }
+  .camadd:hover { border-color: var(--accent); color: var(--text); }
+  .camadd div { text-align: center; } .camadd svg { width: 28px; height: 28px; display: block; margin: 0 auto 6px; }
+
+  .notice { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; margin-bottom: 16px; font-size: 13px; line-height: 1.55;
+            background: var(--accent-soft); border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent); }
+  .notice.warn { background: #f59e0b1f; border-color: #f59e0b66; }
+  .notice svg { margin-top: 2px; color: var(--head); }
+  .notice:empty { display: none; }
+  .notice.ok { background: #22c55e14; border-color: #22c55e55; } .notice.ok svg { color: var(--ok); }
+  .hwgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin: 12px 0 8px; }
+  .hwcell { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--border); min-width: 0; }
+  .hwcell b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+  .hwcell span { font-size: 12px; }
+  .hwbar { margin-top: 8px; } .hwh { display: flex; gap: 10px; font-size: 12.5px; align-items: baseline; } .hwh span:last-child { margin-left: auto; }
+  .hwtrack { height: 8px; border-radius: 99px; background: var(--surface-3); overflow: hidden; margin-top: 4px; }
+  .hwtrack div { height: 100%; border-radius: 99px; transition: width .5s; }
+
+  /* Hộp thoại thêm/sửa camera */
+  .modal .box.wide { max-width: 560px; width: 100%; text-align: left; padding: 0; overflow: hidden; max-height: 92vh; display: flex; flex-direction: column; }
+  .mh { display: flex; align-items: center; padding: 18px 22px 8px; } .mh h2 { margin: 0; flex: 1; font-size: 18px; }
+  .mtypes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 8px 22px; }
+  .mtypes button { flex-direction: column; gap: 6px; padding: 12px 6px; font-size: 12.5px; }
+  .mtypes button.on { background: var(--accent-soft); border-color: var(--accent); }
+  .mbody { padding: 8px 22px 12px; overflow-y: auto; }
+  .mf { display: flex; gap: 8px; padding: 14px 22px 18px; border-top: 1px solid var(--border); align-items: center; } .mf .spacer { flex: 1; }
+  .ctype { display: none; } .ctype.on { display: block; }
+  .field.col { flex-direction: column; align-items: stretch; gap: 6px; border-top: 0; }
+  .field.col label { flex: none; }
+  button.danger { color: var(--bad); }
+  button.danger:hover { background: #f43f5e1a; border-color: var(--bad); }
+
+  /* Cài đặt dạng thẻ + menu bên */
+  .set-wrap { display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 22px; align-items: stretch; }
+  .set-nav { position: sticky; top: 84px; align-self: start; display: flex; flex-direction: column; gap: 4px; }
+  .set-nav button { justify-content: flex-start; background: transparent; border-color: transparent; color: var(--muted); padding: 10px 12px; }
+  .set-nav button:hover { background: var(--surface-2); color: var(--text); }
+  .set-nav button.on { background: var(--accent-soft); color: var(--text); }
+  .set-nav button.on svg { color: var(--accent); }
+  .set-body { display: flex; flex-direction: column; min-width: 0; }
+  .tab { display: none; } .tab.on { display: flex; flex-direction: column; flex: 1; }
+  .tab.on > .card:last-child { flex: 1; }
+  .val { width: 40px; text-align: right; }
+  .savestate { color: var(--muted); font-size: 13px; }
+  .savestate.ok { color: var(--ok); } .savestate.err { color: var(--bad); }
+  @media (max-width: 860px) {
+    .set-wrap { grid-template-columns: 1fr; }
+    .set-nav { position: static; flex-direction: row; overflow-x: auto; }
+    .set-nav button { flex: none; }
+    .mtypes { grid-template-columns: repeat(2, 1fr); }
+  }
+
   /* ---------- Hộp thoại, thông báo */
   .modal { position: fixed; inset: 0; z-index: 50; display: none; place-items: center; padding: 16px; background: #0009; backdrop-filter: blur(4px); }
   .modal.open { display: grid; }
@@ -231,7 +349,6 @@
     .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; order: 2; margin: 14px 0 0; }
     #page-live.active { display: flex; flex-direction: column; }
     .kpi { padding: 12px; gap: 10px; } .kpi .ic { width: 36px; height: 36px; } .kpi .v { font-size: 22px; }
-    .settings { grid-template-columns: 1fr; }
     .sources { grid-template-columns: 1fr; }
   }
   /* Bảng chỉnh hình trên video */
@@ -277,6 +394,13 @@
 <body>
 <!-- Bộ biểu tượng (vẽ bằng SVG, không cần Internet) -->
 <svg width="0" height="0" style="position:absolute">
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></symbol>
+  <symbol id="i-stop" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></symbol>
   <symbol id="i-video" viewBox="0 0 24 24"><path d="m16 13 5.2 3.5a.5.5 0 0 0 .8-.4V7.9a.5.5 0 0 0-.8-.4L16 10.5"/><rect x="2" y="6" width="14" height="12" rx="2"/></symbol>
   <symbol id="i-chart" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></symbol>
   <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></symbol>
@@ -312,7 +436,9 @@
       <div><b>Lớp học AI</b><small>Cảnh báo hành vi</small></div>
     </div>
     <a class="nav" href="#live" data-view="live"><svg class="i"><use href="#i-video"/></svg>Trực tiếp<span class="count" id="navCount">0</span></a>
+    <a class="nav" href="#cameras" data-view="cameras"><svg class="i"><use href="#i-cam"/></svg>Camera</a>
     <a class="nav" href="#stats" data-view="stats"><svg class="i"><use href="#i-chart"/></svg>Thống kê</a>
+    <a class="nav" href="#history" data-view="history"><svg class="i"><use href="#i-clock"/></svg>Lịch sử</a>
     <a class="nav" href="#settings" data-view="settings"><svg class="i"><use href="#i-sliders"/></svg>Cài đặt</a>
     <div class="foot">🔒 Chỉ xem được trên máy này<br><b>Video không gửi đi đâu</b></div>
     <button class="ghost danger quit" onclick="quitApp()" title="Tắt hẳn ứng dụng"><svg class="i"><use href="#i-power"/></svg><span>Tắt ứng dụng</span></button>
@@ -324,12 +450,13 @@
       <div class="spacer"></div>
       <span class="chip"><span class="dot" id="dot"></span><span id="srcName">Đang kết nối...</span></span>
       <button id="soundBtn" title="Âm thanh cảnh báo"><svg class="i"><use href="#i-bell"/></svg><span>Âm thanh</span></button>
-      <button class="hide-sm" onclick="openQR()"><svg class="i"><use href="#i-phone"/></svg>Camera điện thoại</button>
+      
       <button class="icon" id="themeBtn" title="Đổi giao diện sáng/tối"><svg class="i"><use href="#i-sun"/></svg></button>
     </header>
 
     <!-- ================= TRỰC TIẾP ================= -->
     <section class="page" id="page-live">
+      <div class="camtabs" id="camTabs"></div>
       <div class="kpis">
         <div class="card kpi"><div class="ic t-people"><svg class="i"><use href="#i-users"/></svg></div><div><div class="v" id="sPeople">0</div><div class="l">Học sinh trong khung</div></div></div>
         <div class="card kpi" id="cardWarn"><div class="ic t-warn"><svg class="i"><use href="#i-alert"/></svg></div><div><div class="v" id="sWarn">0</div><div class="l">Đang cảnh báo</div></div></div>
@@ -341,31 +468,40 @@
       </div>
 
       <div class="live">
-        <div class="stage" id="stage">
-          <img src="/video" alt="Video trực tiếp từ camera lớp học">
-          <div class="ov tl"><span class="chip live-badge"><span class="dot"></span>LIVE</span><span class="chip"><span id="ovSrc">-</span></span></div>
-          <div class="ov tr"><span class="chip" title="Số học sinh trong khung hình"><svg class="i" style="width:14px;height:14px"><use href="#i-users"/></svg><span id="ovPeople">0</span></span><span class="chip" id="fps">0 FPS</span>
-            <button class="icon" id="flipBtn" onclick="setView({flip_h: !view.flip_h})" title="Lật ngang hình (khi hình bị ngược trái-phải)"><svg class="i"><use href="#i-flip"/></svg></button>
-            <button class="icon" id="viewBtn" onclick="$('viewPanel').classList.toggle('open')" title="Chỉnh hình: xoay, lật, độ sáng, phóng to"><svg class="i"><use href="#i-sliders"/></svg></button>
-            <button class="icon" onclick="fullscreen()" title="Toàn màn hình (chiếu lên máy chiếu)"><svg class="i"><use href="#i-max"/></svg></button></div>
-          <div class="vpanel" id="viewPanel">
-            <div class="vh"><b>Chỉnh hình</b><span class="muted">nhớ riêng cho từng camera</span></div>
-            <div class="vrow"><button id="vFlipH" onclick="setView({flip_h: !view.flip_h})"><svg class="i"><use href="#i-flip"/></svg>Lật ngang</button>
-              <button id="vFlipV" onclick="setView({flip_v: !view.flip_v})"><svg class="i" style="transform:rotate(90deg)"><use href="#i-flip"/></svg>Lật dọc</button></div>
-            <div class="vrow"><button onclick="setView({rotate: (view.rotate + 270) % 360})"><svg class="i" style="transform:scaleX(-1)"><use href="#i-rotate"/></svg>Xoay trái</button>
-              <button onclick="setView({rotate: (view.rotate + 90) % 360})"><svg class="i"><use href="#i-rotate"/></svg>Xoay phải</button>
-              <span class="chip" id="vRot">0°</span></div>
-            <div class="vsl"><label>Độ sáng <b id="vBrV">0</b><small>Phòng tối, ngược sáng</small></label><input type="range" id="vBr" min="-80" max="80" step="5"></div>
-            <div class="vsl"><label>Phóng to giữa khung <b id="vZmV">1.0×</b><small>Học sinh ngồi xa trông nhỏ</small></label><input type="range" id="vZm" min="1" max="3" step="0.1"></div>
-            <div class="vrow"><button class="ghost" onclick="setView({flip_h:false, flip_v:false, rotate:0, brightness:0, zoom:1})">Đặt lại</button></div>
+        <div class="viewcol">
+          <div class="stage" id="stage">
+            <img id="stageImg" alt="Video trực tiếp từ camera lớp học">
+            <div class="ov tl"><span class="chip live-badge"><span class="dot"></span>LIVE</span><span class="chip"><span id="ovSrc">-</span></span></div>
+            <div class="ov tr"><span class="chip" title="Số học sinh trong khung hình"><svg class="i" style="width:14px;height:14px"><use href="#i-users"/></svg><span id="ovPeople">0</span></span><span class="chip" id="fps">0 FPS</span>
+              <button class="icon" id="flipBtn" onclick="setView({flip_h: !view.flip_h})" title="Lật ngang hình (khi hình bị ngược trái-phải)"><svg class="i"><use href="#i-flip"/></svg></button>
+              <button class="icon" id="viewBtn" onclick="$('viewPanel').classList.toggle('open')" title="Chỉnh hình: xoay, lật, độ sáng, phóng to"><svg class="i"><use href="#i-sliders"/></svg></button>
+              <button class="icon" onclick="fullscreen()" title="Toàn màn hình (chiếu lên máy chiếu)"><svg class="i"><use href="#i-max"/></svg></button></div>
+            <div class="vpanel" id="viewPanel">
+              <div class="vh"><b>Chỉnh hình</b><span class="muted">nhớ riêng cho từng camera</span></div>
+              <div class="vrow"><button id="vFlipH" onclick="setView({flip_h: !view.flip_h})"><svg class="i"><use href="#i-flip"/></svg>Lật ngang</button>
+                <button id="vFlipV" onclick="setView({flip_v: !view.flip_v})"><svg class="i" style="transform:rotate(90deg)"><use href="#i-flip"/></svg>Lật dọc</button></div>
+              <div class="vrow"><button onclick="setView({rotate: (view.rotate + 270) % 360})"><svg class="i" style="transform:scaleX(-1)"><use href="#i-rotate"/></svg>Xoay trái</button>
+                <button onclick="setView({rotate: (view.rotate + 90) % 360})"><svg class="i"><use href="#i-rotate"/></svg>Xoay phải</button>
+                <span class="chip" id="vRot">0°</span></div>
+              <div class="vsl"><label>Độ sáng <b id="vBrV">0</b><small>Phòng tối, ngược sáng</small></label><input type="range" id="vBr" min="-80" max="80" step="5"></div>
+              <div class="vsl"><label>Phóng to giữa khung <b id="vZmV">1.0×</b><small>Học sinh ngồi xa trông nhỏ</small></label><input type="range" id="vZm" min="1" max="3" step="0.1"></div>
+              <div class="vrow"><button class="ghost" onclick="setView({flip_h:false, flip_v:false, rotate:0, brightness:0, zoom:1})">Đặt lại</button></div>
+            </div>
+            <div class="banner" id="banner"><svg class="i"><use href="#i-alert"/></svg><span id="bannerText"></span></div>
           </div>
-          <div class="banner" id="banner"><svg class="i"><use href="#i-alert"/></svg><span id="bannerText"></span></div>
+          <div class="camgrid" id="camGrid"></div>
+          <div class="card nocam" id="noCam">
+            <div class="big"><svg class="i"><use href="#i-cam"/></svg></div>
+            <h2>Chưa có camera nào</h2>
+            <p class="hint">Thêm webcam, camera điện thoại, camera IP của lớp hoặc một video để bắt đầu giám sát.</p>
+            <button class="primary" onclick="openAddCam()"><svg class="i"><use href="#i-plus"/></svg>Thêm camera</button>
+          </div>
         </div>
 
         <div class="rcol">
           <div class="card focus-card" id="focusCard">
             <div class="card-h"><svg class="i"><use href="#i-gauge"/></svg><h2>Mức độ tập trung</h2>
-              <span class="info" title="Chỉ số tham khảo: mỗi học sinh được chấm 100% khi bình thường, 50% khi có dấu hiệu chưa đủ lâu để cảnh báo, 0% khi đang bị cảnh báo. Điểm của lớp là trung bình các bạn trong khung hình. Chưa được kiểm chứng với đánh giá của giáo viên.">?</span>
+              <span class="info" title="Chỉ số tham khảo: mỗi học sinh được chấm 100% khi bình thường, 50% khi có dấu hiệu chưa đủ lâu để cảnh báo, 0% khi đang bị cảnh báo. Điểm của lớp là trung bình các bạn nhìn thấy. Nhiều camera thì tính trung bình theo số học sinh.">ⓘ</span>
               <div class="spacer"></div>
               <select id="fcRange" onchange="loadFocus()">
                 <option value="30">30 phút</option><option value="60" selected>1 giờ</option><option value="180">3 giờ</option><option value="480">8 giờ</option><option value="1440">Cả ngày</option></select></div>
@@ -380,12 +516,21 @@
           </div>
           <div class="card feed-card">
             <div class="card-h"><h2>Cảnh báo gần đây</h2><div class="spacer"></div><span class="chip" id="feedCount">0</span></div>
-            <div class="feed" id="feed">
-              <div class="empty"><div class="big"><svg class="i"><use href="#i-check"/></svg></div>Chưa có cảnh báo nào<br><span class="hint">Lớp học đang trật tự</span></div>
-            </div>
+            <div class="feed" id="feed"></div>
           </div>
         </div>
       </div>
+    </section>
+
+    <!-- ================= CAMERA ================= -->
+    <section class="page" id="page-cameras">
+      <div class="page-head">
+        <div class="hint" id="camSummary"></div>
+        <div class="spacer"></div>
+        <button class="primary" id="addCamBtn" onclick="openAddCam()"><svg class="i"><use href="#i-plus"/></svg>Thêm camera</button>
+      </div>
+      <div class="notice" id="capBanner"></div>
+      <div class="camcards" id="camCards"></div>
     </section>
 
     <!-- ================= THỐNG KÊ ================= -->
@@ -420,123 +565,196 @@
         </div>
     </section>
 
-    <!-- ================= CÀI ĐẶT ================= -->
-    <section class="page" id="page-settings">
-      <div class="settings">
-        <div class="card" style="grid-column: 1 / -1">
-          <div class="card-h"><svg class="i"><use href="#i-cam"/></svg><h2>Nguồn camera</h2></div>
-          <div class="card-b">
-            <div class="current"><span class="dot on"></span>Đang dùng: <b id="curSrc">-</b></div>
-            <div class="sources">
-              <div class="src">
-                <div class="h"><svg class="i"><use href="#i-video"/></svg>Webcam / camera USB</div>
-                <div class="hint">Camera của laptop hoặc camera cắm cổng USB.</div>
-                <div class="btns" id="camBtns"></div>
-              </div>
-              <div class="src">
-                <div class="h"><svg class="i"><use href="#i-phone"/></svg>Camera điện thoại <span class="tag c-head_down" style="--c:var(--ok)">không cần cài app</span></div>
-                <div class="qr-row"><img class="qr" id="phoneQR" alt="Mã QR mở trang camera điện thoại">
-                  <div class="hint">Dùng điện thoại <b>cùng Wi-Fi</b> quét mã rồi bấm <b>Bắt đầu</b>.<br>
-                    Trình duyệt báo “không an toàn” thì chọn <i>Nâng cao → Tiếp tục</i>, vì đây là chứng chỉ tự tạo trong mạng nội bộ.
-                    <div id="phoneUrl" style="word-break:break-all;margin-top:6px"></div></div></div>
-              </div>
-              <div class="src">
-                <div class="h"><svg class="i"><use href="#i-link"/></svg>Camera IP / camera lớp học</div>
-                <input type="text" id="ipUrl" placeholder="rtsp://admin:matkhau@192.168.1.64:554/...">
-                <div class="btns"><button class="primary" onclick="setSource($('ipUrl').value)">Kết nối</button></div>
-                <details class="hint"><summary>Địa chỉ mẫu theo hãng</summary>
-                  <p>App <b>IP Webcam</b> (Android): <code>http://IP:8080/video</code><br>
-                     App <b>DroidCam</b>: <code>http://IP:4747/video</code><br>
-                     <b>Hikvision</b>: <code>rtsp://admin:matkhau@IP:554/Streaming/Channels/101</code><br>
-                     <b>Dahua / KBVision</b>: <code>rtsp://admin:matkhau@IP:554/cam/realmonitor?channel=1&amp;subtype=0</code><br>
-                     <b>Imou / Ezviz</b>: bật RTSP trong app, mật khẩu là mã xác minh in dưới camera.</p></details>
-              </div>
-              <div class="src">
-                <div class="h"><svg class="i"><use href="#i-upload"/></svg>Video có sẵn</div>
-                <div class="hint">Dùng để demo, video tự phát lặp lại.</div>
-                <input type="file" id="videoFile" accept="video/*">
-                <div class="btns"><button onclick="uploadVideo()"><svg class="i"><use href="#i-play"/></svg>Tải lên &amp; chạy</button></div>
-              </div>
-            </div>
-            <div class="msg" id="srcMsg"></div>
-          </div>
+    <!-- ================= LỊCH SỬ ================= -->
+    <section class="page" id="page-history">
+      <div class="card">
+        <div class="card-h hist-h">
+          <select id="histSession"></select>
+          <select id="histCamera"></select>
+          <select id="histBehavior"></select>
+          <div class="spacer"></div>
+          <a class="btn" href="/api/events.csv"><svg class="i"><use href="#i-download"/></svg>Tải Excel</a></div>
+        <div class="card-b">
+          <div class="hint" id="histSummary" style="margin-bottom:10px"></div>
+          <div class="scroll-x"><table class="history"><thead><tr><th>Ảnh</th><th>Thời gian</th><th>Camera</th><th>Học sinh</th><th>Hành vi</th><th class="num">Kéo dài</th></tr></thead>
+            <tbody id="histBody"></tbody></table></div>
+          <div class="pager"><button id="histPrev">‹ Trước</button><span id="histPage"></span><button id="histNext">Sau ›</button></div>
         </div>
-
-        <div class="card">
-          <div class="card-h"><svg class="i"><use href="#i-gauge"/></svg><h2>Độ nhạy</h2></div>
-          <div class="card-b">
-            <div class="field"><label>Ngưỡng gục đầu<small>Cao hơn thì nhạy hơn (dễ báo hơn)</small></label>
-              <input type="range" id="head_down_ratio" min="0.05" max="0.4" step="0.01"><b id="v-head_down_ratio" style="width:36px;text-align:right"></b></div>
-            <div class="field"><label>Dùng điện thoại sau<small>giây</small></label><input type="number" id="phone_seconds" min="0.5" step="0.5"></div>
-            <div class="field"><label>Gục đầu sau<small>giây</small></label><input type="number" id="head_down_seconds" min="1" step="0.5"></div>
-            <div class="field"><label>Coi là ngủ gục sau<small>giây gục đầu liên tục</small></label><input type="number" id="sleeping_seconds" min="2" step="1"></div>
-            <div class="field"><label>Không báo lại cùng học sinh trong<small>giây</small></label><input type="number" id="cooldown" min="0" step="1"></div>
-            <div class="field"><label>Chế độ nhìn<small>Cả lớp thì chậm hơn khoảng 3 lần</small></label>
-              <select id="imgsz" style="width:210px">
-                <option value="640">Gần (1–5 học sinh)</option>
-                <option value="960">Vừa (nửa lớp)</option>
-                <option value="1280">Cả lớp học</option>
-              </select></div>
-            <div class="btns" style="margin-top:8px"><button class="primary" onclick="saveSettings('setMsg')"><svg class="i"><use href="#i-check"/></svg>Lưu</button></div>
-            <div class="msg" id="setMsg"></div>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-h"><svg class="i"><use href="#i-bell"/></svg><h2>Âm thanh cảnh báo</h2></div>
-          <div class="card-b">
-            <div class="field"><label>Loa của máy chạy hệ thống<small>Máy tính đặt trong lớp</small></label>
-              <button class="ghost icon" onclick="post('/api/sound/test', { behavior: 'phone' })" title="Thử"><svg class="i"><use href="#i-play"/></svg></button>
-              <label class="switch"><input type="checkbox" id="server_sound"><span></span></label></div>
-            <div class="field"><label>Thiết bị đang xem trang này<small>Laptop / điện thoại giáo viên. Nếu mở ngay trên máy chạy hệ thống thì chỉ loa máy phát, để không nghe 2 lần</small></label>
-              <button class="ghost icon" onclick="unlockAudio(); setTimeout(() => beep('sleeping'), 100)" title="Thử"><svg class="i"><use href="#i-play"/></svg></button>
-              <label class="switch"><input type="checkbox" id="pageSound"><span></span></label></div>
-            <div class="field"><label>Đọc cảnh báo bằng giọng nói<small>Tắt thì chỉ kêu chuông</small></label>
-              <label class="switch"><input type="checkbox" id="voiceChk"><span></span></label></div>
-            <div class="field" style="flex-wrap:wrap"><label>Nghe thử trên thiết bị này</label>
-              <div class="btns">
-                <button onclick="unlockAudio(); playVoice('phone')"><svg class="i"><use href="#i-phone"/></svg>Điện thoại</button>
-                <button onclick="unlockAudio(); playVoice('sleeping')"><svg class="i"><use href="#i-moon"/></svg>Ngủ gật</button>
-                <button onclick="unlockAudio(); playVoice('smoking')"><svg class="i"><use href="#i-smoke"/></svg>Hút thuốc</button>
-                <button onclick="unlockAudio(); playVoice('fighting')"><svg class="i"><use href="#i-fight"/></svg>Đánh nhau</button>
-                <button onclick="unlockAudio(); playVoice('head_down')"><svg class="i"><use href="#i-down"/></svg>Gục xuống bàn</button>
-              </div>
-            </div>
-            <div class="hint" style="margin-top:8px">Chuông “ding-dong” rồi giọng đọc: “Có học sinh dùng điện thoại”, “Có học sinh ngủ gật”, “Có học sinh nằm gục xuống bàn”.
-              Giọng đọc là file có sẵn nên không cần Internet. Đổi giọng: <code>python scripts/make_voices.py --voice vi-VN-NamMinhNeural</code></div>
-            <div class="msg" id="soundMsg"></div>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-h"><svg class="i"><use href="#i-download"/></svg><h2>Lưu trữ</h2><div class="spacer"></div><span class="chip" id="usage">-</span></div>
-          <div class="card-b">
-            <div class="field"><label>Lưu ảnh khi có cảnh báo<small>Để xem lại trong lịch sử. Tắt thì không lưu ảnh nào</small></label>
-              <label class="switch"><input type="checkbox" id="save_snapshots"><span></span></label></div>
-            <div class="field"><label>Tự xoá ảnh cũ hơn<small>ngày</small></label><input type="number" id="keep_days" min="1" step="1"></div>
-            <div class="field"><label>Dung lượng tối đa<small>MB. Vượt mức thì tự xoá ảnh cũ nhất trước</small></label><input type="number" id="max_storage_mb" min="50" step="50"></div>
-            <div class="btns" style="margin-top:8px"><button class="primary" onclick="saveSettings('storeMsg')"><svg class="i"><use href="#i-check"/></svg>Lưu</button>
-              <button class="danger" onclick="clearStorage()"><svg class="i"><use href="#i-alert"/></svg>Xoá hết ảnh</button></div>
-            <div class="hint" style="margin-top:8px">App tự dọn 30 phút một lần, gồm cả video demo đã tải lên. Nhật ký Excel (.csv) không bị xoá.</div>
-            <div class="msg" id="storeMsg"></div>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-h"><svg class="i"><use href="#i-send"/></svg><h2>Thông báo Telegram</h2></div>
-          <div class="card-b">
-            <ol class="steps"><li>Trên Telegram, nhắn cho <b>@BotFather</b> lệnh <code>/newbot</code> và copy token.</li>
-              <li>Mở bot vừa tạo và bấm <b>Start</b>.</li><li>Dán token vào đây và bấm “Tìm chat ID”.</li></ol>
-            <div class="field"><input type="text" id="telegram_token" placeholder="Token bot, ví dụ 123456:ABC..."></div>
-            <div class="field"><input type="text" id="telegram_chat_id" placeholder="Chat ID"><button onclick="findChat()">Tìm chat ID</button></div>
-            <div class="btns"><button class="primary" onclick="saveSettings('tgMsg')"><svg class="i"><use href="#i-check"/></svg>Lưu</button>
-              <button onclick="testTelegram()"><svg class="i"><use href="#i-send"/></svg>Gửi thử</button></div>
-            <div class="msg" id="tgMsg"></div>
-          </div>
-        </div>
-
       </div>
     </section>
+
+    <!-- ================= CÀI ĐẶT ================= -->
+    <section class="page" id="page-settings">
+      <div class="page-head">
+        <div class="hint">Mọi thay đổi được lưu và áp dụng ngay, không cần bấm lưu.</div>
+        <div class="spacer"></div>
+        <span class="savestate" id="saveState"></span>
+      </div>
+      <div class="set-wrap">
+        <nav class="set-nav" id="setNav">
+          <button data-tab="detect" class="on"><svg class="i"><use href="#i-gauge"/></svg>Nhận diện</button>
+          <button data-tab="display"><svg class="i"><use href="#i-video"/></svg>Hiển thị</button>
+          <button data-tab="sound"><svg class="i"><use href="#i-bell"/></svg>Âm thanh</button>
+          <button data-tab="notify"><svg class="i"><use href="#i-send"/></svg>Thông báo</button>
+          <button data-tab="storage"><svg class="i"><use href="#i-download"/></svg>Lưu trữ</button>
+          <button data-tab="adv"><svg class="i"><use href="#i-sliders"/></svg>Nâng cao</button>
+        </nav>
+
+        <div class="set-body">
+          <div class="tab on" id="tab-detect">
+            <div class="card"><div class="card-h"><h2>Độ nhạy nhận diện</h2></div><div class="card-b">
+              <div class="field"><label>Mức coi là nằm gục xuống bàn<small>Chỉ khi đầu thấp ngang hoặc dưới vai mới tính (0 = ngang vai). Cúi đọc/viết bài không bị báo. Tăng lên nếu muốn nhạy hơn</small></label>
+                <input type="range" id="head_down_ratio" min="-0.1" max="0.4" step="0.01"><b id="v-head_down_ratio" class="val"></b></div>
+              <div class="field"><label>Báo dùng điện thoại sau<small>giây cầm điện thoại liên tục</small></label><input type="number" id="phone_seconds" min="0.5" step="0.5"></div>
+              <div class="field"><label>Báo nằm gục xuống bàn sau<small>giây nằm gục liên tục</small></label><input type="number" id="head_down_seconds" min="1" step="0.5"></div>
+              <div class="field"><label>Báo ngủ gật sau<small>giây nằm gục liên tục (từ lúc bắt đầu gục)</small></label><input type="number" id="sleeping_seconds" min="4" step="1"></div>
+              <div class="field"><label>Không báo lại cùng học sinh trong<small>giây</small></label><input type="number" id="cooldown" min="0" step="1"></div>
+              <div class="field"><label>Chế độ nhìn<small>Cả lớp thì chậm hơn khoảng 3 lần so với chế độ gần</small></label>
+                <select id="imgsz" style="width:210px">
+                  <option value="640">Gần (1–5 học sinh)</option>
+                  <option value="960">Vừa (nửa lớp)</option>
+                  <option value="1280">Cả lớp học</option>
+                </select></div>
+            </div></div>
+          </div>
+
+          <div class="tab" id="tab-display">
+            <div class="card"><div class="card-h"><h2>Hiển thị trên video</h2></div><div class="card-b">
+              <div class="field"><label>Hiện khung xương trên video<small>Vẽ các điểm khớp (vai, tay, đầu...) hệ thống dùng để nhận diện. Tắt khi lớp đông cho đỡ rối</small></label>
+                <label class="switch"><input type="checkbox" id="show_skeleton"><span></span></label></div>
+              <div class="field"><label>Giao diện<small>Sáng hoặc tối</small></label>
+                <select id="themeSel" style="width:160px"><option value="dark">Tối</option><option value="light">Sáng</option></select></div>
+              <div class="hint" style="margin-top:6px">Lật, xoay, độ sáng và phóng to chỉnh riêng cho từng camera ngay trên trang Trực tiếp (nút thanh trượt ở góc video).</div>
+            </div></div>
+          </div>
+
+          <div class="tab" id="tab-sound">
+            <div class="card"><div class="card-h"><h2>Âm thanh cảnh báo</h2></div><div class="card-b">
+              <div class="field"><label>Loa của máy chạy hệ thống<small>Máy tính đặt trong lớp</small></label>
+                <button class="ghost icon" onclick="post('/api/sound/test', { behavior: 'phone' })" title="Thử"><svg class="i"><use href="#i-play"/></svg></button>
+                <label class="switch"><input type="checkbox" id="server_sound"><span></span></label></div>
+              <div class="field"><label>Thiết bị đang xem trang này<small>Laptop / điện thoại giáo viên. Nếu mở ngay trên máy chạy hệ thống thì chỉ loa máy phát, để không nghe 2 lần</small></label>
+                <button class="ghost icon" onclick="unlockAudio(); setTimeout(() => beep('sleeping'), 100)" title="Thử"><svg class="i"><use href="#i-play"/></svg></button>
+                <label class="switch"><input type="checkbox" id="pageSound"><span></span></label></div>
+              <div class="field"><label>Đọc cảnh báo bằng giọng nói<small>Tắt thì chỉ kêu chuông</small></label>
+                <label class="switch"><input type="checkbox" id="voiceChk"><span></span></label></div>
+              <div class="field" style="flex-wrap:wrap"><label>Nghe thử trên thiết bị này</label>
+                <div class="btns">
+                  <button onclick="unlockAudio(); playVoice('phone')"><svg class="i"><use href="#i-phone"/></svg>Điện thoại</button>
+                  <button onclick="unlockAudio(); playVoice('sleeping')"><svg class="i"><use href="#i-moon"/></svg>Ngủ gật</button>
+                  <button onclick="unlockAudio(); playVoice('smoking')"><svg class="i"><use href="#i-smoke"/></svg>Hút thuốc</button>
+                  <button onclick="unlockAudio(); playVoice('fighting')"><svg class="i"><use href="#i-fight"/></svg>Đánh nhau</button>
+                  <button onclick="unlockAudio(); playVoice('head_down')"><svg class="i"><use href="#i-down"/></svg>Gục xuống bàn</button>
+                </div>
+              </div>
+              <div class="hint" style="margin-top:8px">Giọng đọc là file có sẵn nên không cần Internet. Đổi giọng: <code>python scripts/make_voices.py --voice vi-VN-NamMinhNeural</code></div>
+            </div></div>
+          </div>
+
+          <div class="tab" id="tab-notify">
+            <div class="card"><div class="card-h"><svg class="i"><use href="#i-send"/></svg><h2>Thông báo Telegram</h2></div><div class="card-b">
+              <ol class="steps"><li>Trên Telegram, nhắn cho <b>@BotFather</b> lệnh <code>/newbot</code> và copy token.</li>
+                <li>Mở bot vừa tạo và bấm <b>Start</b>.</li><li>Dán token vào đây và bấm “Tìm chat ID”.</li></ol>
+              <div class="field"><input type="text" id="telegram_token" placeholder="Token bot, ví dụ 123456:ABC..."></div>
+              <div class="field"><input type="text" id="telegram_chat_id" placeholder="Chat ID"><button onclick="findChat()">Tìm chat ID</button></div>
+              <div class="btns"><button onclick="testTelegram()"><svg class="i"><use href="#i-send"/></svg>Gửi thử</button></div>
+              <div class="msg" id="tgMsg"></div>
+              <div class="hint">Tin nhắn Telegram ghi rõ camera nào phát hiện, kèm ảnh chụp lúc cảnh báo.</div>
+            </div></div>
+          </div>
+
+          <div class="tab" id="tab-storage">
+            <div class="card"><div class="card-h"><h2>Lưu trữ</h2><div class="spacer"></div><span class="chip" id="usage">-</span></div><div class="card-b">
+              <div class="field"><label>Lưu ảnh khi có cảnh báo<small>Để xem lại trong lịch sử. Tắt thì không lưu ảnh nào</small></label>
+                <label class="switch"><input type="checkbox" id="save_snapshots"><span></span></label></div>
+              <div class="field"><label>Tự xoá ảnh cũ hơn<small>ngày</small></label><input type="number" id="keep_days" min="1" step="1"></div>
+              <div class="field"><label>Dung lượng tối đa<small>MB. Vượt mức thì tự xoá ảnh cũ nhất trước</small></label><input type="number" id="max_storage_mb" min="50" step="50"></div>
+              <div class="btns" style="margin-top:8px"><button class="danger" onclick="clearStorage()"><svg class="i"><use href="#i-alert"/></svg>Xoá hết ảnh</button>
+                <a class="btn" href="/api/events.csv"><svg class="i"><use href="#i-download"/></svg>Tải nhật ký Excel</a></div>
+              <div class="hint" style="margin-top:8px">App tự dọn 30 phút một lần, gồm cả video demo đã tải lên. Nhật ký Excel (.csv) không bị xoá.</div>
+              <div class="msg" id="storeMsg"></div>
+            </div></div>
+          </div>
+
+          <div class="tab" id="tab-adv">
+            <div class="card"><div class="card-h"><h2>Tốc độ xử lý</h2></div><div class="card-b">
+              <div class="field"><label>Số hình xử lý mỗi giây (mỗi camera)<small>Số khung hình AI xử lý mỗi giây cho mỗi camera. Điện thoại, nằm gục, ngủ gật, hút thuốc đều kéo dài vài giây nên 1–5 hình/giây là đủ. Khi phát hiện người đứng sát nhau và hình chuyển động mạnh, hệ thống tự tăng lên 5 hình/giây để bắt đánh nhau</small></label>
+                <select id="max_fps" style="width:170px"><option value="0">Không giới hạn</option><option value="1">1 hình/giây (tiết kiệm nhất)</option><option value="2">2 hình/giây</option><option value="3">3 hình/giây</option><option value="5">5 hình/giây (khuyến nghị)</option><option value="10">10 hình/giây</option><option value="15">15 hình/giây</option></select></div>
+              <div class="hint">Càng thấp càng nhẹ máy và chạy được nhiều camera, nhưng đánh nhau cần hình dày nên hệ thống tự tăng lên 5 hình/giây khi thấy người đứng sát nhau và chuyển động mạnh.</div>
+            </div></div>
+            <div style="height:18px"></div>
+            <div class="card"><div class="card-h"><h2>Nhiều camera</h2><div class="spacer"></div><span class="chip" id="hwChip">-</span></div><div class="card-b">
+              <div class="field"><label>Chạy nhiều camera cùng lúc<small>Mặc định tắt: hệ thống chỉ chạy 1 camera. Mỗi camera thêm cần 1 bộ AI riêng nên rất tốn RAM và CPU</small></label>
+                <label class="switch"><input type="checkbox" id="multi_camera"><span></span></label></div>
+              <div class="notice warn" id="multiWarn" style="margin:8px 0 4px"><svg class="i"><use href="#i-alert"/></svg><div><b>Chỉ bật trên máy mạnh.</b> Máy yếu chạy nhiều camera sẽ bị chậm, giật hình và nóng. Hãy xem mục khuyến nghị ở trang Camera trước khi bật.</div></div>
+              <div id="multiOpts">
+              <div class="field"><label>Tự chạy các camera khi mở app<small>Camera nào bật “Tự chạy” trong trang Camera sẽ khởi động cùng app</small></label>
+                <label class="switch"><input type="checkbox" id="autostart"><span></span></label></div>
+              <div class="field"><label>Số camera chạy cùng lúc tối đa<small>Mỗi camera chạy cần thêm khoảng 0,5–1 GB RAM</small></label>
+                <input type="number" id="max_cameras" min="1" max="16" step="1"></div>
+              <div class="field"><label>Số camera xử lý AI đồng thời<small>Máy chỉ có CPU nên để 1: các camera lần lượt chờ đến lượt, mỗi camera chậm hơn nhưng không giật cả máy. Máy có card đồ họa rời có thể đặt 2–3</small></label>
+                <select id="parallel" style="width:120px"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></div>
+              </div>
+              <div class="hint">Gợi ý: máy yếu chạy 2 camera thì đặt “Chế độ nhìn” ở mức Vừa, số hình xử lý mỗi giây là 1–2 và xử lý đồng thời là 1.</div>
+            </div></div>
+            <div class="card" style="margin-top:18px"><div class="card-h"><h2>Hệ thống</h2></div><div class="card-b">
+              <div class="field"><label>Địa chỉ trang này<small>Chỉ mở được trên máy đang chạy ứng dụng</small></label><code id="selfUrl"></code></div>
+              <div class="field"><label>Camera điện thoại<small>Quét mã QR bằng điện thoại cùng Wi-Fi</small></label><button onclick="openQR()"><svg class="i"><use href="#i-qr"/></svg>Hiện mã QR</button></div>
+              <div class="field"><label>Tắt hẳn ứng dụng<small>Hệ thống ngừng giám sát tất cả camera</small></label><button class="danger" onclick="quitApp()"><svg class="i"><use href="#i-power"/></svg>Tắt ứng dụng</button></div>
+            </div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<div class="modal" id="camModal">
+  <div class="box wide" onclick="event.stopPropagation()">
+    <div class="mh"><h2 id="cmTitle">Thêm camera</h2><button class="ghost icon" onclick="closeCamModal()" title="Đóng"><svg class="i"><use href="#i-x"/></svg></button></div>
+    <div class="mtypes" id="cmTypes">
+      <button data-type="webcam"><svg class="i"><use href="#i-video"/></svg>Webcam / USB</button>
+      <button data-type="phone"><svg class="i"><use href="#i-phone"/></svg>Điện thoại</button>
+      <button data-type="ip"><svg class="i"><use href="#i-link"/></svg>Camera IP</button>
+      <button data-type="file"><svg class="i"><use href="#i-upload"/></svg>Video</button>
+    </div>
+    <div class="mbody">
+      <div class="notice warn" id="cmWarn" style="display:none"></div>
+      <div class="field col"><label>Tên camera<small>Ví dụ: Lớp 10A1, Hành lang tầng 2</small></label><input type="text" id="cmName" maxlength="60" placeholder="Camera 1"></div>
+
+      <div class="field" id="cmEnabledRow"><label>Tự chạy khi mở app<small>Camera này khởi động cùng ứng dụng</small></label>
+        <label class="switch"><input type="checkbox" id="cmEnabled" checked><span></span></label></div>
+
+      <div class="ctype" id="ct-webcam">
+        <div class="field col"><label>Chọn webcam<small>Camera laptop hoặc camera cắm cổng USB</small></label>
+          <select id="cmWebcam"></select></div>
+      </div>
+      <div class="ctype" id="ct-phone">
+        <div class="qr-row"><img class="qr" id="cmQR" alt="Mã QR mở trang camera điện thoại">
+          <div class="hint">Dùng điện thoại <b>cùng Wi-Fi</b> quét mã rồi bấm <b>Bắt đầu</b>. Không cần cài app.<br>
+            Trình duyệt báo “không an toàn” thì chọn <i>Nâng cao → Tiếp tục</i>, vì đây là chứng chỉ tự tạo trong mạng nội bộ.<br>
+            <span id="cmPhoneNote"></span></div></div>
+      </div>
+      <div class="ctype" id="ct-ip">
+        <div class="field col"><label id="cmUrlLabel">Địa chỉ camera</label><input type="text" id="cmUrl" placeholder="rtsp://admin:matkhau@192.168.1.64:554/..."></div>
+        <details class="hint"><summary>Địa chỉ mẫu theo hãng</summary>
+          <p>App <b>IP Webcam</b> (Android): <code>http://IP:8080/video</code><br>
+             App <b>DroidCam</b>: <code>http://IP:4747/video</code><br>
+             <b>Hikvision</b>: <code>rtsp://admin:matkhau@IP:554/Streaming/Channels/101</code><br>
+             <b>Dahua / KBVision</b>: <code>rtsp://admin:matkhau@IP:554/cam/realmonitor?channel=1&amp;subtype=0</code><br>
+             <b>Imou / Ezviz</b>: bật RTSP trong app, mật khẩu là mã xác minh in dưới camera.</p></details>
+      </div>
+      <div class="ctype" id="ct-file">
+        <div class="field col"><label>Chọn file video<small>Dùng để demo, video tự phát lặp lại</small></label><input type="file" id="cmFile" accept="video/*"></div>
+      </div>
+      <div class="msg" id="cmMsg"></div>
+    </div>
+    <div class="mf">
+      <button class="danger" id="cmDelete" onclick="deleteCam()"><svg class="i"><use href="#i-trash"/></svg>Xoá camera</button>
+      <div class="spacer"></div>
+      <button id="cmTest" onclick="testCam()"><svg class="i"><use href="#i-check"/></svg>Thử kết nối</button>
+      <button class="primary" id="cmSave" onclick="saveCam()">Thêm &amp; chạy</button>
+    </div>
   </div>
 </div>
 
@@ -572,7 +790,7 @@ const post = (url, body) => api(url, { method: "POST", headers: { "Content-Type"
 function msg(id, text, ok) { const el = $(id); el.textContent = text; el.className = "msg " + (ok ? "ok" : "err"); }
 
 // ---------- chuyển trang
-const TITLES = { live: "Giám sát trực tiếp", stats: "Thống kê", settings: "Cài đặt" };
+const TITLES = { live: "Giám sát trực tiếp", cameras: "Camera", stats: "Thống kê", history: "Lịch sử", settings: "Cài đặt" };
 function route() {
   const view = (location.hash || "#live").slice(1);
   const v = TITLES[view] ? view : "live";
@@ -580,6 +798,8 @@ function route() {
   document.querySelectorAll(".nav").forEach(n => n.classList.toggle("active", n.dataset.view === v));
   $("title").textContent = TITLES[v];
   if (v === "stats") loadStats();
+  if (v === "history") loadHistory();
+  if (v === "cameras") { api("/api/info").then(i => { info = i; renderCamPage(); }).catch(() => renderCamPage()); }
   if (v === "settings") loadInfo();
 }
 addEventListener("hashchange", route);
@@ -674,9 +894,102 @@ function toast(text) {
   clearTimeout(toastTimer); toastTimer = setTimeout(() => $("toast").classList.remove("show"), 4000);
 }
 
-// ---------- cập nhật trạng thái mỗi giây
-function viewBusy_pending() { return document.activeElement === $("vBr") || document.activeElement === $("vZm"); }
+// ---------- nhiều camera: danh sách, thẻ chọn, lưới xem
+const esc = t => String(t ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+let cams = [], overview = {}, counts = {}, countsBy = {}, stageCam = null, tabsSig = "";
+let sel = (() => { try { return localStorage.getItem("selCam") || "all"; } catch { return "all"; } })();
+const camById = id => cams.find(c => c.id === id);
+const selCams = () => sel === "all" ? cams : cams.filter(c => c.id === sel);
+const STATE = { stopped: "Đã dừng", starting: "Đang khởi động", running: "Đang chạy", error: "Lỗi" };
+const KIND = { webcam: ["i-video", "Webcam / USB"], phone: ["i-phone", "Điện thoại"], rtsp: ["i-link", "Camera IP (RTSP)"], ip: ["i-link", "Camera IP"], file: ["i-upload", "Video"] };
+
+function selectCam(id) {
+  sel = id; try { localStorage.setItem("selCam", id); } catch {}
+  renderLive(); renderFeed(); loadFocus(); renderKpis();
+}
+
+function renderLive() {
+  if (cams.length === 1) sel = cams[0].id;
+  if (sel !== "all" && !camById(sel)) sel = "all";
+  const none = cams.length === 0, grid = !none && sel === "all";
+  $("noCam").classList.toggle("show", none);
+  $("stage").style.display = (none || grid) ? "none" : "";
+  $("camGrid").classList.toggle("show", grid);
+
+  const sig = cams.map(c => [c.id, c.name, c.state].join("|")).join("~") + "#" + sel;
+  if (sig !== tabsSig) {
+    tabsSig = sig;
+    $("camTabs").innerHTML = cams.length < 2 ? "" :
+      `<button data-id="all" class="${sel === "all" ? "on" : ""}">${icon("i-grid", 15)}Tất cả (${cams.length})</button>` +
+      cams.map(c => `<button data-id="${c.id}" class="${sel === c.id ? "on" : ""}"><span class="dot ${c.state === "running" ? "on" : ""}" data-dot></span>${esc(c.name)}<span class="n" data-n style="display:none"></span></button>`).join("");
+    $("camTabs").querySelectorAll("button").forEach(b => b.onclick = () => selectCam(b.dataset.id));
+    // lưới ô xem
+    $("camGrid").innerHTML = cams.map(c => `<div class="tile" data-id="${c.id}" onclick="selectCam('${c.id}')">
+        <img alt="${esc(c.name)}" src="/api/cameras/${c.id}/frame.jpg?t=${Date.now()}">
+        <div class="tl"><span class="chip"><span class="dot" data-dot></span>${esc(c.name)}</span></div>
+        <div class="tr"><span class="chip" data-info>-</span></div><div class="tb" data-banner></div></div>`).join("");
+  }
+  if (!none && !grid) {
+    if (stageCam !== sel) { stageCam = sel; $("stageImg").src = `/video/${sel}`; }
+  } else if (stageCam) { stageCam = null; $("stageImg").removeAttribute("src"); }
+}
+
+// ô xem nhỏ tải ảnh mới mỗi 0,8 giây (đỡ tốn kết nối so với phát video liên tục cho từng camera)
+let tileTimer = 0;
+function tileLoop() {
+  clearTimeout(tileTimer);
+  const n = cams.length;
+  if (!document.hidden && $("camGrid").classList.contains("show")) {
+    $("camGrid").querySelectorAll(".tile").forEach(t => {
+      if (t.dataset.busy) return;   // ảnh trước chưa tải xong thì bỏ qua, không dồn yêu cầu
+      t.dataset.busy = "1";
+      const im = new Image(), target = t.querySelector("img");
+      im.onload = () => { target.src = im.src; delete t.dataset.busy; };
+      im.onerror = () => { delete t.dataset.busy; };
+      im.src = `/api/cameras/${t.dataset.id}/frame.jpg?t=${Date.now()}`;
+    });
+  }
+  tileTimer = setTimeout(tileLoop, Math.min(2500, 700 + n * 120));   // nhiều camera thì làm tươi thưa hơn
+}
+tileLoop();
+
+function renderKpis() {
+  const list = selCams();
+  const people = list.reduce((a, c) => a + c.people, 0), warn = list.reduce((a, c) => a + c.warning, 0);
+  const c = sel === "all" ? counts : (countsBy[sel] || {});
+  $("sPeople").textContent = people; $("sWarn").textContent = warn;
+  $("cardWarn").classList.toggle("alarm", warn > 0);
+  for (const k of Object.keys(SHORT)) $("c-" + k).textContent = c[k] || 0;
+}
+
+function renderCamStatus() {
+  // thẻ chọn camera + ô xem nhỏ
+  $("camTabs").querySelectorAll("button[data-id]").forEach(b => {
+    const c = camById(b.dataset.id), warn = c ? c.warning : cams.reduce((a, x) => a + x.warning, 0);
+    const n = b.querySelector("[data-n]"), d = b.querySelector("[data-dot]");
+    if (n) { n.style.display = warn ? "inline-block" : "none"; n.textContent = warn; }
+    if (d && c) d.className = "dot " + (c.warning ? "alarm" : c.state === "running" ? "on" : "");
+  });
+  $("camGrid").querySelectorAll(".tile").forEach(t => {
+    const c = camById(t.dataset.id); if (!c) return;
+    t.classList.toggle("alarm", c.warning > 0);
+    t.querySelector("[data-dot]").className = "dot " + (c.warning ? "alarm" : c.state === "running" ? "on" : "");
+    t.querySelector("[data-info]").textContent = c.state === "running" ? `${c.people} HS · ${c.fps} FPS` : STATE[c.state];
+    t.querySelector("[data-banner]").textContent = c.announcements.join("  ·  ");
+  });
+  // khung xem 1 camera
+  const c = camById(sel);
+  if (c) {
+    $("ovSrc").textContent = c.name; $("fps").textContent = c.fps + " FPS"; $("ovPeople").textContent = c.people;
+    $("stage").classList.toggle("alarm", c.warning > 0);
+    $("banner").classList.toggle("show", c.announcements.length > 0);
+    $("bannerText").textContent = c.announcements.join("  ·  ");
+    if (c.view && !viewBusy_pending()) { view = c.view; renderView(); }
+  }
+}
+
 // ------------------------------------------------------------------ chỉ số tập trung
+function viewBusy_pending() { return document.activeElement === $("vBr") || document.activeElement === $("vZm"); }
 const fColor = v => v >= 80 ? "var(--ok)" : v >= 55 ? "var(--head)" : "var(--bad)";
 const fLabel = v => v == null ? "Chưa có dữ liệu" : v >= 80 ? "Tập trung tốt" : v >= 55 ? "Trung bình" : "Dễ mất tập trung";
 function renderFocusNow(v) {
@@ -687,7 +1000,7 @@ function renderFocusNow(v) {
   $("fLabel").textContent = fLabel(v);
 }
 async function loadFocus() {
-  const d = await api("/api/focus?minutes=" + $("fcRange").value).catch(() => null);
+  const d = await api("/api/focus?minutes=" + $("fcRange").value + "&camera=" + (sel === "all" ? "" : sel)).catch(() => null);
   if (!d) return;
   $("fAvg").textContent = d.avg == null ? "–" : d.avg + "%";
   $("fLow").textContent = d.low ? Math.round(d.low.score) + "%" : "–";
@@ -700,7 +1013,7 @@ async function loadFocus() {
 }
 setInterval(() => { if (!document.hidden && $("page-live").classList.contains("active")) loadFocus(); }, 10000);
 
-// ------------------------------------------------------------------ chỉnh hình camera
+// ------------------------------------------------------------------ chỉnh hình camera đang chọn
 let view = { flip_h: false, flip_v: false, rotate: 0, brightness: 0, zoom: 1 }, viewBusy = 0;
 function renderView() {
   $("flipBtn").classList.toggle("on", view.flip_h);
@@ -714,57 +1027,58 @@ function renderView() {
   $("vZmV").textContent = Number(view.zoom).toFixed(1) + "×";
 }
 async function setView(patch) {
+  if (sel === "all") return;
   view = { ...view, ...patch }; renderView();  // hiện ngay, không chờ máy chủ
   const mine = ++viewBusy;
-  try { const r = await post("/api/view", view); if (mine === viewBusy) { view = r.view; renderView(); } }
+  try { const r = await post(`/api/cameras/${sel}/view`, view); if (mine === viewBusy) { view = r.view; renderView(); } }
   catch (e) { toast(e.message); }
 }
 $("vBr").oninput = e => setView({ brightness: Number(e.target.value) });
 $("vZm").oninput = e => setView({ zoom: Number(e.target.value) });
 
+// ------------------------------------------------------------------ cập nhật trạng thái mỗi giây
 async function poll() {
   try {
     const s = await api("/api/status?after=" + lastId);
-    const src = s.source || "Chưa chọn camera";
-    $("srcName").textContent = src; $("ovSrc").textContent = src; $("curSrc").textContent = src;
-    $("fps").textContent = s.fps + " FPS";
-    $("ovPeople").textContent = s.people;
-    renderFocusNow(s.focus);
-    if (s.view && !viewBusy_pending()) { view = s.view; renderView(); }
-    $("dot").className = "dot " + (s.warning ? "alarm" : s.source ? "on" : "");
-    $("sPeople").textContent = s.people;
-    $("sWarn").textContent = s.warning;
-    $("cardWarn").classList.toggle("alarm", s.warning > 0);
-    $("stage").classList.toggle("alarm", s.warning > 0);
-    $("banner").classList.toggle("show", s.announcements.length > 0);
-    $("bannerText").textContent = s.announcements.join("  ·  ");
-    $("navCount").style.display = s.warning ? "inline-block" : "none";
-    $("navCount").textContent = s.warning;
-    for (const k in s.counts) $("c-" + k).textContent = s.counts[k];
+    cams = s.cameras; overview = s.overview; lastHw = s.hw; counts = s.counts; countsBy = s.counts_by_camera || {};
+    renderLive(); renderCamStatus(); renderKpis();
+    const running = cams.filter(c => c.state === "running").length, warn = overview.warning;
+    $("srcName").textContent = !cams.length ? "Chưa có camera" : cams.length === 1 ? cams[0].name : `${running}/${cams.length} camera đang chạy`;
+    $("dot").className = "dot " + (warn ? "alarm" : running ? "on" : "");
+    const c = camById(sel);
+    renderFocusNow(c ? c.focus : overview.focus);
+    $("navCount").style.display = warn ? "inline-block" : "none"; $("navCount").textContent = warn;
+    if ($("page-cameras").classList.contains("active")) renderCamPage();
     if (s.events.length) {
-      if (lastId) { toast([...new Set(s.events.map(x => x.text))].join(" · ")); alertSound(s.events); }
+      const multi = cams.length > 1;
+      if (lastId) { toast([...new Set(s.events.map(x => (multi ? x.camera_name + ": " : "") + x.text))].join(" · ")); alertSound(s.events); }
       s.events.forEach(addEvent);
       lastId = s.events[s.events.length - 1].id;
       if ($("page-stats").classList.contains("active")) loadStats();
     }
   } catch (e) { $("srcName").textContent = "Mất kết nối tới máy chủ"; $("dot").className = "dot"; }
 }
-function addEvent(e) {
-  allEvents.push(e);
-  const feed = $("feed");
-  if (feed.querySelector(".empty")) feed.innerHTML = "";
-  const div = document.createElement("div");
-  div.className = "ev c-" + e.behavior;
-  div.innerHTML = `${e.snapshot ? `<img src="${e.snapshot}" alt="" onerror="this.style.visibility='hidden'" onclick="zoom('${e.snapshot}')">` : ""}
+const evHtml = e => `<div class="ev c-${e.behavior}">${e.snapshot ? `<img src="${e.snapshot}" alt="" onerror="this.style.visibility='hidden'" onclick="zoom('${e.snapshot}')">` : ""}
     <div style="min-width:0"><span class="tag">${icon(ICON[e.behavior], 12)}${e.name}</span>
     <div class="who" style="margin-top:6px">Học sinh #${e.student} <span class="meta">· ${Math.round(e.duration)} giây</span></div>
-    <div class="meta">${e.time.slice(11)} · ${e.time.slice(8, 10)}/${e.time.slice(5, 7)}</div></div>`;
-  feed.prepend(div);
+    <div class="meta">${cams.length > 1 && e.camera_name ? esc(e.camera_name) + " · " : ""}${e.time.slice(11)} · ${e.time.slice(8, 10)}/${e.time.slice(5, 7)}</div></div></div>`;
+function renderFeed() {
+  const list = allEvents.filter(e => sel === "all" || e.camera === sel);
+  $("feed").innerHTML = list.length ? list.slice(-100).reverse().map(evHtml).join("") :
+    `<div class="empty"><div class="big"><svg class="i"><use href="#i-check"/></svg></div>Chưa có cảnh báo nào<br><span class="hint">Lớp học đang trật tự</span></div>`;
+  $("feedCount").textContent = list.length;
+}
+function addEvent(e) {
+  allEvents.push(e);
+  if (sel !== "all" && sel !== e.camera) return;
+  const feed = $("feed");
+  if (feed.querySelector(".empty")) feed.innerHTML = "";
+  feed.insertAdjacentHTML("afterbegin", evHtml(e));
   while (feed.children.length > 100) feed.lastChild.remove();
-  $("feedCount").textContent = allEvents.length;
+  $("feedCount").textContent = allEvents.filter(x => sel === "all" || x.camera === sel).length;
 }
 function zoom(src) { $("bigImg").src = src; $("imgModal").classList.add("open"); }
-function fullscreen() { const s = $("stage"); document.fullscreenElement ? document.exitFullscreen() : s.requestFullscreen?.(); }
+function fullscreen() { const s = sel === "all" ? $("camGrid") : $("stage"); document.fullscreenElement ? document.exitFullscreen() : s.requestFullscreen?.(); }
 
 // ---------- thống kê
 async function loadStats() {
@@ -801,57 +1115,278 @@ async function loadStats() {
     : `<tr><td colspan="5" class="muted" style="text-align:center;padding:30px">Chưa có cảnh báo</td></tr>`;
 }
 
-// ---------- cài đặt
-const SETTING_KEYS = ["head_down_ratio", "phone_seconds", "head_down_seconds", "sleeping_seconds", "cooldown", "imgsz", "telegram_token", "telegram_chat_id", "keep_days", "max_storage_mb"];
+// ---------- lịch sử các lần chạy
+const HIST_PAGE = 50; let histOffset = 0;
+const fmtSess = x => x.session ? `${x.session.slice(8, 10)}/${x.session.slice(5, 7)} ${x.session.slice(11, 16)}` : "Trước khi có mục này";
+async function loadHistory() {
+  const sel = $("histSession"), beh = $("histBehavior");
+  if (!beh.options.length) {
+    beh.innerHTML = `<option value="">Mọi hành vi</option>` + Object.keys(SHORT).map(k => `<option value="${k}">${SHORT[k]}</option>`).join("");
+    sel.onchange = beh.onchange = $("histCamera").onchange = () => { histOffset = 0; loadHistory(); };
+    $("histPrev").onclick = () => { histOffset = Math.max(0, histOffset - HIST_PAGE); loadHistory(); };
+    $("histNext").onclick = () => { histOffset += HIST_PAGE; loadHistory(); };
+  }
+  const h = await api(`/api/history?session=${encodeURIComponent(sel.value || "all")}&behavior=${beh.value}&camera=${encodeURIComponent($("histCamera").value)}&limit=${HIST_PAGE}&offset=${histOffset}`);
+  const pages = Math.max(1, Math.ceil(h.total / HIST_PAGE));
+  $("histPage").textContent = `Trang ${histOffset / HIST_PAGE + 1} / ${pages}`;
+  $("histPrev").disabled = histOffset === 0;
+  $("histNext").disabled = histOffset + HIST_PAGE >= h.total;
+  const keep = sel.value || "all";
+  sel.innerHTML = `<option value="all">Tất cả các lần chạy</option>` + h.sessions.map(x =>
+    `<option value="${x.session}">${fmtSess(x)}${x.session === h.current ? " (đang chạy)" : ""} · ${x.count} cảnh báo</option>`).join("");
+  sel.value = [...sel.options].some(o => o.value === keep) ? keep : "all";
+  const keepCam = $("histCamera").value;
+  $("histCamera").innerHTML = `<option value="">Mọi camera</option>` + h.cameras.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join("");
+  $("histCamera").value = h.cameras.includes(keepCam) ? keepCam : "";
+  $("histSummary").textContent = `${h.total} cảnh báo, mới nhất ở trên`;
+  $("histBody").innerHTML = h.events.length ? h.events.map(e =>
+    `<tr><td>${e.snapshot ? `<img src="${e.snapshot}" alt="" onerror="this.style.visibility='hidden'" onclick="zoom('${e.snapshot}')">` : ""}</td><td>${e.time.slice(8, 10)}/${e.time.slice(5, 7)} ${e.time.slice(11)}</td>
+     <td class="muted">${esc(e.camera) || "-"}</td><td><b>#${e.student}</b></td><td><span class="tag c-${e.behavior}">${icon(ICON[e.behavior], 12)}${SHORT[e.behavior]}</span></td><td class="num">${Math.round(e.duration)}s</td></tr>`).join("")
+    : `<tr><td colspan="5" class="muted" style="text-align:center;padding:30px">Chưa có cảnh báo</td></tr>`;
+}
+
+// ---------- trang Camera
+let camSigPrev = "", lastHw = null;
+const hwText = h => `${h.cpu.replace(/\(R\)|\(TM\)|CPU /g, "").trim()} (${h.cores} luồng) · ${h.ram_gb} GB RAM${h.gpu ? " · " + h.gpu.replace("NVIDIA GeForce ", "") + " " + h.vram_gb + " GB" : " · không có card đồ họa rời"}`;
+const bar = (used, total, label) => `<div class="hwbar"><div class="hwh"><span>${label}</span><b>${used} / ${total} GB đang dùng</b><span class="muted">còn ${Math.max(0, (total - used)).toFixed(1)} GB</span></div>
+  <div class="hwtrack"><div style="width:${total ? Math.min(100, used / total * 100) : 0}%;background:${used / total > .85 ? "var(--bad)" : used / total > .65 ? "var(--head)" : "var(--ok)"}"></div></div></div>`;
+function renderCapBanner() {
+  const s = info?.settings; if (!s) return;
+  const hw = lastHw || s.hw, rec = hw.recommended;
+  const running = cams.filter(c => c.state === "running" || c.state === "starting").length;
+  const fpsList = cams.filter(c => c.state === "running").map(c => c.fps);
+  const avg = fpsList.length ? fpsList.reduce((a, b) => a + b, 0) / fpsList.length : null;
+  const slow = running > 1 && avg !== null && avg < 3;
+  const over = running > rec || slow;
+  const el = $("capBanner");
+  const vramUsed = +(hw.vram_gb - hw.vram_free_gb).toFixed(1);
+  el.className = "notice hwnote" + (over || !s.multi_camera ? "" : " ok") + (over ? " warn" : "");
+  el.innerHTML = `<svg class="i"><use href="#i-${over ? "alert" : "gauge"}"/></svg><div style="flex:1;min-width:0">
+    <div>${!s.multi_camera ? `<b>Đang ở chế độ 1 camera</b> (mặc định, phù hợp mọi máy). Muốn chạy nhiều camera cùng lúc, bật “Chạy nhiều camera” ở <a href="#settings" onclick="setTimeout(() => document.querySelector('#setNav [data-tab=adv]').click(), 50)">Cài đặt → Nâng cao</a>. ` : ""}
+      <b>Chạy nhiều camera chỉ phù hợp máy mạnh</b>: mỗi camera cần thêm bộ nhớ và sức xử lý, máy yếu sẽ chậm, giật hình và nóng.</div>
+    <div class="hwgrid">
+      <div class="hwcell"><span class="muted">Bộ xử lý</span><b>${esc(hw.cpu.replace(/\(R\)|\(TM\)/g, ""))}</b><span class="muted">${hw.cores} luồng</span></div>
+      <div class="hwcell"><span class="muted">Card đồ họa</span><b>${hw.gpu ? esc(hw.gpu) : "Không có (chạy bằng CPU)"}</b><span class="muted">${hw.gpu ? hw.vram_gb + " GB bộ nhớ riêng" : "chậm hơn nhiều khi chạy nhiều camera"}</span></div>
+      <div class="hwcell"><span class="muted">Khuyến nghị</span><b>Tối đa ${rec} camera</b><span class="muted">${over ? "Bạn đang chạy " + running + (slow ? ", tốc độ trung bình chỉ " + avg.toFixed(1) + " hình/giây: máy đang quá tải" : "") : "Đang chạy " + running + (avg !== null ? " · trung bình " + avg.toFixed(1) + " hình/giây" : "")}</span></div>
+    </div>
+    ${bar(hw.ram_used_gb, hw.ram_gb, "RAM")}
+    ${hw.gpu ? bar(vramUsed, hw.vram_gb, "Bộ nhớ card đồ họa") : ""}
+  </div>`;
+}
+function renderCamPage() {
+  const running = cams.filter(c => c.state === "running").length;
+  $("addCamBtn").lastChild.textContent = info?.settings && !info.settings.multi_camera && cams.length ? "Đổi camera" : "Thêm camera";
+  $("camSummary").textContent = cams.length ? `${cams.length} camera · ${running} đang chạy` : "Chưa có camera nào";
+  renderCapBanner();
+  const sig = cams.map(c => [c.id, c.name, c.source, c.state, c.enabled, c.error].join("|")).join("~");
+  if (sig !== camSigPrev) {
+    camSigPrev = sig;
+    $("camCards").innerHTML = cams.map(c => {
+      const [ic, kind] = KIND[c.kind] || KIND.ip, on = c.state === "running" || c.state === "starting";
+      return `<div class="card camcard" data-id="${c.id}">
+        <div class="thumb"><div class="ph"><svg class="i"><use href="#${ic}"/></svg></div>
+          <img alt="" data-thumb ${on ? `src="/api/cameras/${c.id}/frame.jpg?t=${Date.now()}"` : ""} style="${on ? "" : "display:none"}"><span class="state st ${c.state}">${STATE[c.state]}</span></div>
+        <div class="cb">
+          <div class="ct"><b title="${esc(c.name)}">${esc(c.name)}</b>
+            <button class="ghost icon" onclick="openEditCam('${c.id}')" title="Chỉnh sửa"><svg class="i"><use href="#i-edit"/></svg></button></div>
+          <div class="cs">${icon(ic, 14)}<span style="white-space:nowrap">${kind}</span>${c.kind === "phone" ? "" : ` · <code title="${esc(c.source)}">${esc(c.source)}</code>`}</div>
+          ${c.error ? `<div class="cerr">${esc(c.error)}</div>` : ""}
+          <div class="cstats"><span>${icon("i-users", 14)} <b data-p>0</b> HS</span><span><b data-f>0</b> FPS</span><span class="w">${icon("i-alert", 14)} <b data-w>0</b></span></div>
+          <div class="cbtns">
+            ${on ? `<button onclick="camAction('${c.id}','stop',this)"><svg class="i"><use href="#i-stop"/></svg>Dừng</button>
+                    <button class="primary" onclick="selectCam('${c.id}'); location.hash='#live'"><svg class="i"><use href="#i-video"/></svg>Xem</button>`
+                 : `<button class="primary" onclick="camAction('${c.id}','start',this)"><svg class="i"><use href="#i-play"/></svg>Chạy</button>`}
+            <label class="auto" title="Tự chạy camera này khi mở app">Tự chạy<span class="switch"><input type="checkbox" ${c.enabled ? "checked" : ""} onchange="setAuto('${c.id}', this.checked)"><span></span></span></label>
+          </div></div></div>`;
+    }).join("") + `<div class="card camcard camadd" onclick="openAddCam()"><div><svg class="i"><use href="#i-plus"/></svg>${info?.settings && !info.settings.multi_camera && cams.length ? "Đổi camera" : "Thêm camera"}</div></div>`;
+  }
+  cams.forEach(c => {
+    const el = $("camCards").querySelector(`.camcard[data-id="${c.id}"]`); if (!el) return;
+    el.querySelector("[data-p]").textContent = c.people; el.querySelector("[data-f]").textContent = c.fps;
+    el.querySelector("[data-w]").textContent = c.warning; el.querySelector(".w").classList.toggle("on", c.warning > 0);
+  });
+}
+setInterval(() => {
+  if (document.hidden || !$("page-cameras").classList.contains("active")) return;
+  $("camCards").querySelectorAll(".camcard[data-id]").forEach(el => {
+    const c = camById(el.dataset.id), img = el.querySelector("[data-thumb]");
+    if (!c || !img || img.style.display === "none") return;
+    const im = new Image(); im.onload = () => { img.src = im.src; }; im.src = `/api/cameras/${c.id}/frame.jpg?t=${Date.now()}`;
+  });
+}, 1500);
+
+async function camAction(id, act, btn) {
+  btn.disabled = true;
+  try { await post(`/api/cameras/${id}/${act}`, {}); }
+  catch (e) { toast(e.message); }
+  btn.disabled = false; poll();
+}
+async function setAuto(id, v) {
+  try { await post(`/api/cameras/${id}`, { enabled: v }); } catch (e) { toast(e.message); }
+}
+
+// ---------- hộp thoại thêm / sửa camera
+let editId = null, cmType = "webcam", swapMode = false;
+const camIndexInUse = i => !swapMode && cams.some(c => c.source === String(i) && (c.state === "running" || c.state === "starting"));
+function setType(t) {
+  cmType = t;
+  document.querySelectorAll("#cmTypes button").forEach(b => b.classList.toggle("on", b.dataset.type === t));
+  document.querySelectorAll(".ctype").forEach(d => d.classList.toggle("on", d.id === "ct-" + t));
+  $("cmTest").style.display = t === "phone" || t === "file" ? "none" : "";
+  msg("cmMsg", "", true);
+}
+document.querySelectorAll("#cmTypes button").forEach(b => b.onclick = () => setType(b.dataset.type));
+
+async function openAddCam() {
+  editId = null;
+  info = await api("/api/info").catch(() => info);
+  const swap = cams.length > 0 && !info.settings.multi_camera;   // chế độ 1 camera: chọn nguồn mới thay cho camera hiện tại
+  swapMode = swap;
+  $("cmTitle").textContent = swap ? "Đổi camera" : "Thêm camera";
+  $("cmTypes").style.display = ""; $("cmDelete").style.display = "none"; $("cmSave").textContent = swap ? "Đổi & chạy" : "Thêm & chạy";
+  $("cmName").value = swap ? cams[0].name : `Camera ${cams.length + 1}`; $("cmUrl").value = ""; $("cmFile").value = "";
+  $("cmEnabledRow").style.display = "";
+  $("cmEnabled").checked = true;
+  const list = info.cameras.length ? info.cameras : [0];
+  $("cmWebcam").innerHTML = list.map(i => `<option value="${i}" ${camIndexInUse(i) ? "disabled" : ""}>Webcam ${i}${camIndexInUse(i) ? " (đang dùng)" : ""}</option>`).join("");
+  const hasPhone = !swap && cams.some(c => c.source === "phone");
+  $("cmEnabledRow").style.display = swap ? "none" : "";
+  if (info.urls.phone) $("cmQR").src = "/api/qr?url=" + encodeURIComponent(info.urls.phone);
+  $("cmPhoneNote").innerHTML = hasPhone ? "<b>Đã có một camera điện thoại.</b> Chỉ dùng được một điện thoại cùng lúc." : "";
+  document.querySelector('#cmTypes [data-type="phone"]').disabled = hasPhone || !info.urls.phone;
+  $("cmUrlLabel").textContent = "Địa chỉ camera";
+  setType("webcam");
+  const running = cams.filter(c => c.state === "running" || c.state === "starting").length, rec = (lastHw || info.settings.hw).recommended;
+  const w = $("cmWarn");
+  w.style.display = !swap && running + 1 > rec ? "" : "none";
+  w.innerHTML = `<svg class="i"><use href="#i-alert"/></svg><div><b>Máy này chỉ nên chạy tối đa ${rec} camera cùng lúc</b> (${hwText(lastHw || info.settings.hw)}). Thêm camera nữa có thể làm hệ thống chậm và giật hình. Bạn vẫn có thể thêm rồi để camera ở trạng thái dừng.</div>`;
+  $("camModal").classList.add("open");
+}
+function openEditCam(id) {
+  const c = camById(id); if (!c) return;
+  editId = id;
+  $("cmTitle").textContent = "Chỉnh sửa camera";
+  $("cmTypes").style.display = "none"; $("cmDelete").style.display = ""; $("cmSave").textContent = "Lưu";
+  $("cmName").value = c.name; $("cmWarn").style.display = "none";
+  $("cmEnabledRow").style.display = ""; $("cmEnabled").checked = c.enabled;
+  document.querySelectorAll(".ctype").forEach(d => d.classList.remove("on"));
+  if (c.kind !== "phone") { $("ct-ip").classList.add("on"); $("cmUrl").value = c.source; }
+  $("cmUrlLabel").textContent = c.kind === "webcam" ? "Số thứ tự webcam" : c.kind === "file" ? "Đường dẫn file video" : "Địa chỉ camera";
+  $("cmTest").style.display = c.kind === "phone" || c.kind === "file" ? "none" : "";
+  cmType = "edit"; msg("cmMsg", "", true);
+  $("camModal").classList.add("open");
+}
+function closeCamModal() { $("camModal").classList.remove("open"); }
+function camSource() {
+  if (cmType === "webcam") return $("cmWebcam").value;
+  if (cmType === "phone") return "phone";
+  return $("cmUrl").value.trim();
+}
+async function testCam() {
+  const source = camSource();
+  if (!source) return msg("cmMsg", "Hãy nhập nguồn camera");
+  msg("cmMsg", "Đang thử kết nối (tối đa vài giây)...", true);
+  $("cmTest").disabled = true;
+  try { const r = await post("/api/cameras/test", { source }); msg("cmMsg", "✔ " + r.message, true); }
+  catch (e) { msg("cmMsg", e.message); }
+  $("cmTest").disabled = false;
+}
+async function saveCam() {
+  const name = $("cmName").value.trim(), btn = $("cmSave");
+  btn.disabled = true;
+  try {
+    if (editId) {
+      await post(`/api/cameras/${editId}`, { name, source: $("cmUrl").value.trim(), enabled: $("cmEnabled").checked });
+    } else {
+      let source = camSource();
+      if (cmType === "file") {
+        const f = $("cmFile").files[0];
+        if (!f) throw new Error("Hãy chọn 1 file video");
+        msg("cmMsg", "Đang tải video lên...", true);
+        const fd = new FormData(); fd.append("file", f);
+        source = (await api("/api/upload", { method: "POST", body: fd })).path;
+      }
+      if (!source) throw new Error("Hãy nhập nguồn camera");
+      msg("cmMsg", "Đang thêm camera...", true);
+      const r = await post("/api/cameras", { name, source, enabled: $("cmEnabled").checked, start: true });
+      if (r.warning) toast("Đã thêm nhưng chưa chạy được: " + r.warning);
+      else selectCam("all");
+    }
+    closeCamModal(); await poll(); renderCamPage();
+  } catch (e) { msg("cmMsg", e.message); }
+  btn.disabled = false;
+}
+async function deleteCam() {
+  const c = camById(editId); if (!c) return;
+  if (!confirm(`Xoá camera “${c.name}”? Lịch sử cảnh báo của camera này vẫn được giữ.`)) return;
+  try { await api(`/api/cameras/${editId}`, { method: "DELETE" }); closeCamModal(); await poll(); renderCamPage(); }
+  catch (e) { msg("cmMsg", e.message); }
+}
+$("camModal").onclick = e => { if (e.target === $("camModal")) closeCamModal(); };
+
+// ---------- cài đặt (tự động lưu)
+const NUM_KEYS = ["head_down_ratio", "phone_seconds", "head_down_seconds", "sleeping_seconds", "cooldown", "imgsz", "keep_days", "max_storage_mb", "max_cameras", "parallel", "max_fps"];
+const TXT_KEYS = ["telegram_token", "telegram_chat_id"];
+const CHK_KEYS = ["save_snapshots", "show_skeleton", "server_sound", "autostart", "multi_camera"];
+let saveTimer, loadingSettings = false;
 async function loadInfo() {
   info = await api("/api/info");
   const s = info.settings;
-  for (const k of SETTING_KEYS) $(k).value = s[k];
-  $("save_snapshots").checked = s.save_snapshots;
-  loadUsage();
+  loadingSettings = true;
+  for (const k of [...NUM_KEYS, ...TXT_KEYS]) $(k).value = s[k];
+  for (const k of CHK_KEYS) $(k).checked = s[k];
+  loadingSettings = false;
+  renderMulti();
   $("v-head_down_ratio").textContent = s.head_down_ratio;
-  $("server_sound").checked = s.server_sound;
   $("pageSound").checked = sound;
   $("voiceChk").checked = voice;
-  $("camBtns").innerHTML = (info.cameras.length ? info.cameras : [0]).map(i => `<button onclick="setSource('${i}')">${icon("i-video", 16)}Webcam ${i}</button>`).join("");
-  if (info.urls.phone) {
-    $("phoneQR").src = "/api/qr?url=" + encodeURIComponent(info.urls.phone);
-    $("phoneUrl").innerHTML = `<code>${info.urls.phone}</code><br><button style="margin-top:8px" onclick="setSource('phone')">${icon("i-phone", 16)}Chuyển sang camera điện thoại</button>`;
-  } else $("phoneUrl").textContent = "Chưa bật HTTPS (thiếu thư viện cryptography).";
+  $("themeSel").value = document.documentElement.dataset.theme === "light" ? "light" : "dark";
+  $("hwChip").textContent = (s.hw.gpu ? s.hw.gpu.replace("NVIDIA GeForce ", "") : "CPU") + " · " + s.hw.ram_gb + " GB RAM";
+  $("selfUrl").textContent = location.origin;
+  loadUsage();
 }
-$("head_down_ratio").oninput = e => $("v-head_down_ratio").textContent = e.target.value;
-$("server_sound").onchange = e => post("/api/settings", { server_sound: e.target.checked })
-  .then(() => msg("soundMsg", "✔ Đã lưu", true)).catch(err => msg("soundMsg", err.message));
+function renderMulti() { $("multiOpts").style.display = $("multi_camera").checked ? "" : "none"; }
+$("multi_camera").addEventListener("change", e => {
+  renderMulti();
+  if (e.target.checked && !confirm("Chạy nhiều camera chỉ phù hợp máy mạnh (nhiều RAM, nhiều nhân CPU hoặc có card đồ họa).\nMáy yếu sẽ bị chậm, giật hình và nóng.\n\nBật chế độ nhiều camera?")) {
+    e.target.checked = false; renderMulti();
+  }
+});
+function scheduleSave() {
+  if (loadingSettings) return;
+  $("saveState").className = "savestate"; $("saveState").textContent = "Đang lưu...";
+  clearTimeout(saveTimer); saveTimer = setTimeout(saveSettings, 600);
+}
+async function saveSettings() {
+  const body = {};
+  for (const k of NUM_KEYS) { const v = $(k).value; if (v !== "" && !isNaN(Number(v))) body[k] = v; }
+  for (const k of TXT_KEYS) body[k] = $(k).value;
+  for (const k of CHK_KEYS) body[k] = $(k).checked;
+  try {
+    const r = await post("/api/settings", body); info.settings = r.settings;
+    $("saveState").className = "savestate ok"; $("saveState").textContent = "✔ Đã lưu lúc " + new Date().toLocaleTimeString("vi-VN");
+  } catch (e) { $("saveState").className = "savestate err"; $("saveState").textContent = "Lỗi: " + e.message; }
+}
+for (const k of [...NUM_KEYS, ...TXT_KEYS, ...CHK_KEYS]) { $(k).oninput = scheduleSave; $(k).onchange = scheduleSave; }
+$("head_down_ratio").addEventListener("input", e => $("v-head_down_ratio").textContent = e.target.value);
 $("pageSound").onchange = e => { sound = e.target.checked; save("sound", sound); unlockAudio(); renderSoundBtn(); };
 $("voiceChk").onchange = e => { voice = e.target.checked; save("voice", voice); };
-
-async function setSource(source) {
-  msg("srcMsg", "Đang kết nối...", true);
-  try { const r = await post("/api/source", { source }); msg("srcMsg", "✔ Đã chuyển sang: " + r.source, true); }
-  catch (e) { msg("srcMsg", e.message); }
-}
-async function uploadVideo() {
-  const f = $("videoFile").files[0];
-  if (!f) return msg("srcMsg", "Hãy chọn 1 file video");
-  msg("srcMsg", "Đang tải lên...", true);
-  const fd = new FormData(); fd.append("file", f);
-  try { await api("/api/upload", { method: "POST", body: fd }); msg("srcMsg", "✔ Đang chạy video: " + f.name, true); }
-  catch (e) { msg("srcMsg", e.message); }
-}
-async function saveSettings(msgId = "setMsg") {
-  const body = {};
-  for (const k of SETTING_KEYS) body[k] = $(k).value;
-  body.save_snapshots = $("save_snapshots").checked;
-  try { await post("/api/settings", body); msg(msgId, "✔ Đã lưu, áp dụng ngay", true); }
-  catch (e) { msg(msgId, e.message); }
-}
+$("themeSel").onchange = e => {
+  document.documentElement.dataset.theme = e.target.value;
+  try { localStorage.setItem("theme", e.target.value); } catch {}
+  renderTheme();
+};
+document.querySelectorAll("#setNav button").forEach(b => b.onclick = () => {
+  document.querySelectorAll("#setNav button").forEach(x => x.classList.toggle("on", x === b));
+  document.querySelectorAll(".tab").forEach(t => t.classList.toggle("on", t.id === "tab-" + b.dataset.tab));
+});
 async function findChat() {
   try { const r = await post("/api/telegram/find-chat", { token: $("telegram_token").value });
-        $("telegram_chat_id").value = r.chat_id; msg("tgMsg", `✔ Tìm thấy: ${r.name} (${r.chat_id}). Bấm Lưu.`, true); }
+        $("telegram_chat_id").value = r.chat_id; scheduleSave(); msg("tgMsg", `✔ Tìm thấy: ${r.name} (${r.chat_id})`, true); }
   catch (e) { msg("tgMsg", e.message); }
 }
 async function testTelegram() {
-  await saveSettings("tgMsg");
+  await saveSettings();
   try { await post("/api/telegram/test", {}); msg("tgMsg", "✔ Đã gửi, kiểm tra Telegram nhé", true); }
   catch (e) { msg("tgMsg", e.message); }
 }
@@ -864,6 +1399,7 @@ async function clearStorage() {
   try { const r = await post("/api/storage/clear", {}); msg("storeMsg", `✔ Đã xoá ${r.removed} file`, true); loadUsage(); }
   catch (e) { msg("storeMsg", e.message); }
 }
+
 async function quitApp() {
   if (!confirm("Tắt hẳn ứng dụng? Hệ thống sẽ ngừng giám sát.")) return;
   await post("/api/quit", {}).catch(() => {});
@@ -878,7 +1414,7 @@ async function openQR() {
   $("qrModal").classList.add("open");
 }
 
-renderTheme(); renderSoundBtn(); route(); poll(); loadFocus();
+renderTheme(); renderSoundBtn(); route(); poll(); loadFocus(); renderFeed();
 api("/api/info").then(i => { info = i; }).catch(() => {});
 setInterval(poll, 1000);
 setInterval(() => { if ($("page-stats").classList.contains("active")) loadStats(); }, 10000);

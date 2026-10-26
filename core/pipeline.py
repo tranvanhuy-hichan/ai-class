@@ -400,8 +400,8 @@ class Pipeline:
             if matches:
                 owner = min(matches, key=lambda p: np.hypot(sg.center(p["box"])[0] - c[0], sg.center(p["box"])[1] - c[1]))
                 if behavior == "sleeping":
+                    # Chỉ coi là gục đầu; "nhắm mắt" phải do phép đo mắt xác nhận, tránh báo ngủ vì 1 lần nhận nhầm
                     owner["signals"]["head_down"] = True
-                    owner["signals"]["eyes_closed"] = True
                 elif behavior == "phone":
                     owner["signals"]["phone"] = True
                     owner.setdefault("phone_boxes", []).append(box)
