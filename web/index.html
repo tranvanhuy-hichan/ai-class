@@ -86,12 +86,12 @@
   .muted { color: var(--muted); }
 
   /* ---------- KPI */
-  .kpis { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 16px; margin-bottom: 18px; }
-  .kpi { padding: 16px 18px; display: flex; align-items: center; gap: 14px; }
-  .kpi .ic { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; flex: none; }
+  .kpis { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 12px; margin-bottom: 18px; }
+  .kpi { padding: 14px 12px; display: flex; align-items: center; gap: 10px; }
+  .kpi .ic { width: 38px; height: 38px; border-radius: 12px; display: grid; place-items: center; flex: none; }
   .kpi .ic svg { width: 22px; height: 22px; }
-  .kpi .v { font-size: 28px; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
-  .kpi .l { color: var(--muted); font-size: 13px; }
+  .kpi .v { font-size: 26px; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+  .kpi .l { color: var(--muted); font-size: 12px; line-height: 1.25; }
   .kpi.alarm { border-color: var(--bad); background: linear-gradient(135deg, #f43f5e1a, transparent 60%), var(--surface); }
   .kpi.alarm .v { color: var(--bad); }
   .t-people { background: #22d3ee1f; color: var(--accent-2); }
@@ -211,7 +211,7 @@
   .toast.show { transform: translate(-50%, 0); opacity: 1; visibility: visible; }
 
   /* ---------- Màn hình nhỏ */
-  @media (max-width: 1280px) { .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } .live { grid-template-columns: minmax(0, 1fr) 340px; } }
+  @media (max-width: 1280px) { .kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); } .live { grid-template-columns: minmax(0, 1fr) 340px; } }
   @media (max-width: 1024px) {
     .live, .stats-grid { grid-template-columns: 1fr; }
     .stage img { height: auto; aspect-ratio: 16 / 9; min-height: 0; }
