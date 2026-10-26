@@ -755,6 +755,8 @@ def apply_settings(cfg, settings):
     for key, (group, name) in TUNABLE.items():
         if key in settings:
             cfg[group][name] = type(cfg[group][name])(settings[key])
+    if "head_down_pose" in settings:
+        cfg["rules"]["head_down_pose"] = bool(settings["head_down_pose"])
 
 
 def create_app(engine, urls):
@@ -970,6 +972,8 @@ def create_app(engine, urls):
         threading.Thread(target=engine.clean_storage, daemon=True).start()  # áp dụng giới hạn mới ngay
         if "show_skeleton" in body:
             engine.settings["show_skeleton"] = bool(body["show_skeleton"])
+        if "head_down_pose" in body:
+            engine.settings["head_down_pose"] = bool(body["head_down_pose"])
         if "autostart" in body:
             engine.settings["autostart"] = bool(body["autostart"])
         for key, lo, hi in (("parallel", 1, 8), ("max_cameras", 1, 16), ("max_fps", 0, 30)):
@@ -1111,6 +1115,7 @@ def current_settings(engine):
     s["telegram_token"] = engine.settings.get("telegram_token", "")
     s["telegram_chat_id"] = engine.settings.get("telegram_chat_id", "")
     s["show_skeleton"] = engine.settings.get("show_skeleton", False)
+    s["head_down_pose"] = bool(engine.cfg["rules"].get("head_down_pose", False))
     s["autostart"] = engine.settings.get("autostart", True)
     s["parallel"] = engine.parallel()
     s["multi_camera"] = engine.multi()

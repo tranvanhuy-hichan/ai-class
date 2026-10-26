@@ -263,7 +263,8 @@ class Pipeline:
                 if np.max(kp[:, 2]) < 0.40:
                     continue
                 ratio = sg.head_ratio(kp, thr, box)
-                is_head_down = "head_down" in self.behaviors and ratio is not None and ratio < r["head_down_ratio"]
+                is_head_down = ("head_down" in self.behaviors and r.get("head_down_pose", False)
+                                and ratio is not None and ratio < r["head_down_ratio"])
                 people.append({
                     "id": tid, "box": box, "kpts": kp, "head_ratio": ratio,
                     "signals": {"head_down": is_head_down},
