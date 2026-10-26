@@ -8,9 +8,13 @@ from PyInstaller.utils.hooks import collect_all, collect_submodules
 
 ROOT = Path(SPECPATH).parent  # noqa: F821 (SPECPATH do PyInstaller cung cấp)
 
+# Chỉ gói mô hình app thật sự dùng. Bản đóng gói chạy PyTorch CPU nên không cần các mô hình nặng (m, x) và bản sao lưu;
+# build trên máy có nhiều file lạ trong weights/ cũng không làm bộ cài phình ra.
+SKIP_WEIGHTS = ("yolo11m", "yolo11x", "yolo11s.pt", "_cu.pt", "behavior_v1.pt")
 datas = [
     (str(ROOT / "web"), "web"),
-    (str(ROOT / "weights"), "weights"),
+    *[(str(f), "weights") for f in sorted((ROOT / "weights").iterdir())
+      if f.is_file() and not any(k in f.name for k in SKIP_WEIGHTS)],
     (str(ROOT / "config.yaml"), "."),
 ]
 binaries, hiddenimports = [], []
