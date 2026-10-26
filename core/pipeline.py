@@ -154,9 +154,22 @@ class SpatialTracker:
         return stable_ids
 
 
+ALL_BEHAVIORS = ("phone", "head_down", "sleeping", "eyes_closed", "fighting", "smoking")
+
+
+def mode_behaviors(cfg, mode):
+    """Các hành vi được theo dõi ở chế độ `mode` (config.yaml, mục modes). Không có chế độ -> theo dõi tất cả."""
+    mc = (cfg.get("modes") or {}).get(mode) if mode else None
+    return set(mc["behaviors"]) if mc and mc.get("behaviors") else set(ALL_BEHAVIORS)
+
+
 class Pipeline:
-    def __init__(self, cfg):
+    def __init__(self, cfg, mode=None):
+        """mode: tên chế độ trong config.yaml (vd "lop", "hanhlang"). Chỉ nạp và chạy các mô hình mà chế độ đó cần."""
         self.cfg = cfg
+        self.mode = mode
+        self.behaviors = mode_behaviors(cfg, mode)
+        mc = (cfg.get("modes") or {}).get(mode) or {}
         m = cfg["models"]
         self.device = m.get("device") or None
         import torch
@@ -165,10 +178,10 @@ class Pipeline:
             print("[i] Đang chạy chế độ CPU (máy không có GPU) - áp dụng bộ tối ưu tiết kiệm tài nguyên.")
 
         self.pose = YOLO(str(res(m["pose"])))
-        self.obj = YOLO(str(res(m["object"])))
+        self.obj = YOLO(str(res(m["object"]))) if "phone" in self.behaviors else None   # chỉ dùng để tìm điện thoại
 
         self.eye = self.face = None
-        method = m.get("eye_method", "mediapipe")
+        method = m.get("eye_method", "mediapipe") if "eyes_closed" in self.behaviors else "off"
         if method == "mediapipe":
             self.face = load_face_landmarker(res(m.get("face_landmarker", "weights/face_landmarker.task")))
         elif method == "classifier" and res(m["eye_classifier"]).exists():
@@ -178,11 +191,17 @@ class Pipeline:
             print(f"[i] Đã nạp mô hình mắt: {m['eye_classifier']}")
 
         self.custom = None
-        if m.get("custom_behavior") and res(m["custom_behavior"]).exists():
-            self.custom = YOLO(str(res(m["custom_behavior"])))
+        custom_path = mc.get("custom_behavior") or m.get("custom_behavior")
+        if custom_path and res(custom_path).exists():
+            model = YOLO(str(res(custom_path)))
             cmap = {k.lower(): v for k, v in cfg.get("custom_class_map", {}).items()}
-            self.custom_map = {i: cmap.get(n.lower()) for i, n in self.custom.names.items()}
-            print(f"[i] Đã nạp mô hình hành vi: {m['custom_behavior']} -> {self.custom_map}")
+            # Bỏ các lớp thuộc hành vi mà chế độ này không theo dõi (vd chế độ hành lang bỏ phone, sleep)
+            cmap_mode = {i: cmap.get(n.lower()) for i, n in model.names.items()}
+            self.custom_map = {i: (b if b in self.behaviors or (b == "sleeping" and "head_down" in self.behaviors) else None)
+                               for i, b in cmap_mode.items()}
+            if any(self.custom_map.values()):
+                self.custom = model
+                print(f"[i] Đã nạp mô hình hành vi: {custom_path} -> {self.custom_map}")
 
         self.tracker = SpatialTracker()
         self.rules = BehaviorRules(cfg["timing"])
@@ -241,16 +260,18 @@ class Pipeline:
                 if np.max(kp[:, 2]) < 0.40:
                     continue
                 ratio = sg.head_ratio(kp, thr, box)
-                is_head_down = ratio is not None and ratio < r["head_down_ratio"]
+                is_head_down = "head_down" in self.behaviors and ratio is not None and ratio < r["head_down_ratio"]
                 people.append({
                     "id": tid, "box": box, "kpts": kp, "head_ratio": ratio,
                     "signals": {"head_down": is_head_down},
                 })
 
-        self.fight.update(people, t)   # khung xương đã có sẵn nên gần như không tốn thêm thời gian
+        if "fighting" in self.behaviors:
+            self.fight.update(people, t)   # khung xương đã có sẵn nên gần như không tốn thêm thời gian
 
         if people:
-            self._detect_phones(frame, people, det, r, thr, t)
+            if self.obj is not None:
+                self._detect_phones(frame, people, det, r, thr, t)
             if self.face is not None:
                 self._check_eyes_mediapipe(frame, people, r, thr, t)
             elif self.eye is not None:
@@ -380,13 +401,15 @@ class Pipeline:
         if self._due(last, t, self.aux_interval * self._load):
             # Điếu thuốc nhỏ nên điểm tin cậy thấp hơn các hành vi khác: chạy với ngưỡng thấp nhất rồi lọc từng lớp
             smoke_conf = det.get("smoking_conf", 0.30)
-            res = self.custom.predict(frame, conf=min(det["person_conf"], smoke_conf), imgsz=det["imgsz"],
-                                      device=self.device, verbose=False)[0]
+            per_class = det.get("custom_conf", {})   # ngưỡng riêng từng hành vi, vd phone cao hơn để bớt báo nhầm
+            res = self.custom.predict(frame, conf=min([det["person_conf"], smoke_conf, *per_class.values()]),
+                                      imgsz=det["imgsz"], device=self.device, verbose=False)[0]
             dets = []
             if res.boxes is not None and len(res.boxes):
                 for box, cls, cf in zip(res.boxes.xyxy.cpu().numpy(), res.boxes.cls.int().cpu().tolist(),
                                         res.boxes.conf.cpu().tolist()):
-                    need = smoke_conf if self.custom_map.get(cls) == "smoking" else det["person_conf"]
+                    behavior = self.custom_map.get(cls)
+                    need = per_class.get(behavior, smoke_conf if behavior == "smoking" else det["person_conf"])
                     if cf >= need:
                         dets.append((box, cls))
             self._custom_cache = (dets, t)

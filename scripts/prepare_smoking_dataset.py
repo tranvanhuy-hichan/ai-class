@@ -39,8 +39,13 @@ def copy_set(src, dst, prefix, remap):
                     if len(parts) < 5:
                         continue
                     new = remap(int(parts[0]))
-                    if new is not None:
-                        lines.append(" ".join([str(new)] + parts[1:]))
+                    if new is None:
+                        continue
+                    if len(parts) > 5:   # nhãn đa giác (segmentation) -> đổi sang khung bao
+                        xs, ys = [float(v) for v in parts[1::2]], [float(v) for v in parts[2::2]]
+                        parts = [parts[0], f"{(min(xs) + max(xs)) / 2:.6f}", f"{(min(ys) + max(ys)) / 2:.6f}",
+                                 f"{max(xs) - min(xs):.6f}", f"{max(ys) - min(ys):.6f}"]
+                    lines.append(" ".join([str(new)] + parts[1:]))
             name = f"{prefix}_{img.name}"
             shutil.copy(img, dst / sp_dst / "images" / name)
             (dst / sp_dst / "labels" / (Path(name).stem + ".txt")).write_text("\n".join(lines) + ("\n" if lines else ""))
@@ -51,8 +56,8 @@ def copy_set(src, dst, prefix, remap):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--classroom", default="data/student-classroom-activity")
-    ap.add_argument("--smoking", default="data/smoking_raw/smoking-and-drinking-dataset-for-yolo/Dataset")
+    ap.add_argument("--classroom", default="data/nguon/student-classroom-activity")
+    ap.add_argument("--smoking", default="data/nguon/smoking_raw/smoking-and-drinking-dataset-for-yolo/Dataset")
     ap.add_argument("--dst", default="data/behavior_smoking")
     a = ap.parse_args()
     dst = ROOT / a.dst

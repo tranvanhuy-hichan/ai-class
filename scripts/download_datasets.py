@@ -1,4 +1,4 @@
-"""Tải các bộ dữ liệu công khai về thư mục data/.
+"""Tải các bộ dữ liệu công khai về thư mục data/nguon/.
 
   python scripts/download_datasets.py eyes
       Bộ ảnh mắt mở/nhắm + ngáp (Kaggle: serenaraju/yawn-eye-dataset-new)
@@ -15,7 +15,7 @@
 
 Bộ SCB-Dataset (lớn nhất về hành vi học sinh: cúi đầu, nằm bò ra bàn, dùng
 điện thoại, giơ tay, đọc, viết...) phải tải thủ công theo hướng dẫn tại
-https://github.com/Whiffe/SCB-dataset rồi giải nén vào data/scb/.
+https://github.com/Whiffe/SCB-dataset rồi giải nén vào data/nguon/scb/.
 """
 import argparse
 import shutil
@@ -27,12 +27,12 @@ DATA = Path(__file__).resolve().parent.parent / "data"
 def download_eyes():
     import kagglehub
     path = kagglehub.dataset_download("serenaraju/yawn-eye-dataset-new")
-    dst = DATA / "raw_eyes"
+    dst = DATA / "nguon" / "raw_eyes"
     if dst.exists():
         shutil.rmtree(dst)
     shutil.copytree(path, dst)
     print(f"Đã tải về: {dst}")
-    print("Bước tiếp theo: python scripts/prepare_eye_dataset.py --src data/raw_eyes")
+    print("Bước tiếp theo: python scripts/prepare_eye_dataset.py --src data/nguon/raw_eyes")
 
 
 SMOKING_SETS = ["prajjwalkumarpanzade/smoking-and-drinking-dataset-for-yolo"]
@@ -41,7 +41,7 @@ SMOKING_SETS = ["prajjwalkumarpanzade/smoking-and-drinking-dataset-for-yolo"]
 def download_smoking():
     import kagglehub
     for ref in SMOKING_SETS:
-        dst = DATA / "smoking_raw" / ref.split("/")[1]
+        dst = DATA / "nguon" / "smoking_raw" / ref.split("/")[1]
         if dst.exists():
             shutil.rmtree(dst)
         shutil.copytree(kagglehub.dataset_download(ref), dst)
@@ -53,7 +53,7 @@ def download_roboflow(a):
     from roboflow import Roboflow
     rf = Roboflow(api_key=a.api_key)
     ds = rf.workspace(a.workspace).project(a.project).version(a.version).download(
-        "yolov8", location=str(DATA / a.project))
+        "yolov8", location=str(DATA / "nguon" / a.project))
     print(f"Đã tải về: {ds.location}")
     print(f"Bước tiếp theo: python scripts/train_behavior.py --data {ds.location}/data.yaml")
 

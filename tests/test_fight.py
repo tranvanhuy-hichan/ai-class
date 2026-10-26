@@ -66,6 +66,13 @@ def solo_flailing(i, t):
     return [person(1, 100, wrist_r=(x, 40)), person(2, 230)]
 
 
+def chatting_close(i, t):
+    """Hai bạn ngồi sát nhau vừa nói chuyện vừa múa tay nhanh trên bàn, tay lướt qua người bạn bên cạnh."""
+    xa = 100 + 70 * np.sin(t * 9)
+    xb = 230 - 70 * np.sin(t * 8 + 1)
+    return [person(1, 100, wrist_r=(xa, 220)), person(2, 190, wrist_l=(xb, 220))]
+
+
 def idle(i, t):
     return [person(1, 100), person(2, 230)]
 
@@ -110,6 +117,12 @@ def test_scale_invariant_far_students():
     print("OK test_scale_invariant_far_students")
 
 
+def test_chatting_close_not_fight():
+    for fps in (5, 8, 10, 25):
+        assert run(chatting_close, fps) is None, f"fps={fps}: ngồi sát múa tay trò chuyện không phải đánh nhau"
+    print("OK test_chatting_close_not_fight")
+
+
 def test_keypoint_glitch_ignored():
     """Khung xương nhảy 1 khung hình rất xa (nhiễu) không được coi là cú đánh."""
     def glitch(i, t):
@@ -139,6 +152,7 @@ if __name__ == "__main__":
     test_solo_flailing_not_fight()
     test_passing_pen_and_idle_not_fight()
     test_scale_invariant_far_students()
+    test_chatting_close_not_fight()
     test_keypoint_glitch_ignored()
     test_fight_marks_both_and_resets()
     print("TẤT CẢ TEST ĐÁNH NHAU ĐÃ VƯỢT QUA!")

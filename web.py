@@ -45,6 +45,7 @@ from fastapi.staticfiles import StaticFiles
 
 from core import cleanup
 from core.fight import FightDetector
+from core.pipeline import mode_behaviors
 from core.focus import FocusTracker, label as focus_label
 from core.camera import PushSource, VideoSource
 from core.display import Drawer, EventLogger, FPSMeter
@@ -56,6 +57,7 @@ from core.window import open_window, wait_closed
 
 WEB = res("web")
 SETTINGS_FILE = DATA / "settings.json"
+BOOT_ID = str(int(time.time()))   # đổi mỗi lần app khởi động, để trang web biết mà tải lại
 UPLOADS = DATA / "uploads"
 # Luôn hỏi lại máy chủ khi mở trang, để sau khi cập nhật app không bị kẹt giao diện bản cũ
 NO_CACHE = {"Cache-Control": "no-cache, must-revalidate"}
@@ -296,6 +298,8 @@ class Camera:
             if not self.source:
                 raise RuntimeError("Camera chưa có nguồn video")
             eng = self.engine
+            if eng.mode is None and eng.cfg.get("modes"):
+                raise RuntimeError("Chưa chọn chế độ (Lớp học / Hành lang)")
             if sum(1 for c in eng.cameras.values() if c.running) >= eng.max_cameras():
                 raise RuntimeError(
                     f"Đang chạy {eng.max_cameras()} camera. Hãy dừng bớt một camera" if eng.multi() else
@@ -372,7 +376,7 @@ class Camera:
         try:
             if self.pipe is None:
                 self._show(placeholder("Đang nạp mô hình AI..."))
-                self.pipe = Pipeline(eng.cfg)
+                self.pipe = Pipeline(eng.cfg, eng.mode)
             else:
                 self.pipe.reset()
         except Exception as e:
@@ -444,7 +448,8 @@ class Camera:
                     self._show(out)
             self.last_frame = time.time()
             self.empty_since = None if people else (self.empty_since or self.last_frame)
-            self.touching = any(FightDetector.near(a["box"], b["box"]) for i, a in enumerate(people) for b in people[i + 1:])
+            self.touching = "fighting" in eng.behaviors() and any(
+                FightDetector.near(a["box"], b["box"]) for i, a in enumerate(people) for b in people[i + 1:])
 
             for a in alerts:
                 eng.on_alert(self, a, out)
@@ -517,6 +522,7 @@ class Engine:
         self.logger = EventLogger(DATA / cfg["output"]["log_dir"],
                                   settings.get("save_snapshots", cfg["output"]["save_snapshots"]))
         self.phone = PushSource()
+        self.mode = None   # chế độ đang chạy (lop / hanhlang), chọn mỗi lần mở app
         self.cameras = {}
         self.gate = Gate(self.parallel())
         self.events = deque(maxlen=500)
@@ -526,6 +532,26 @@ class Engine:
         for d in settings.get("cameras", []):
             if d.get("id"):
                 self.cameras[d["id"]] = Camera(self, d)
+
+    def behaviors(self):
+        return mode_behaviors(self.cfg, self.mode)
+
+    def modes_info(self):
+        return {"mode": self.mode, "last": self.settings.get("mode_last"),
+                "modes": [{"id": k, "ten": v.get("ten", k), "mo_ta": v.get("mo_ta", ""), "behaviors": v.get("behaviors", [])}
+                          for k, v in (self.cfg.get("modes") or {}).items()]}
+
+    def set_mode(self, mode):
+        if mode not in (self.cfg.get("modes") or {}):
+            raise ValueError("Chế độ không hợp lệ")
+        if mode != self.mode:
+            self.stop_all()
+            for cam in self.cameras.values():
+                cam.pipe = None   # nạp lại mô hình đúng chế độ khi camera chạy lại
+            self.mode = mode
+        self.settings["mode_last"] = mode
+        self.save()
+        threading.Thread(target=self.autostart, daemon=True).start()
 
     @staticmethod
     def _encode(img):
@@ -617,8 +643,8 @@ class Engine:
 
     def autostart(self):
         """Mở app: bật lần lượt các camera được đặt tự chạy (nạp mô hình mất vài giây mỗi camera)."""
-        if not self.settings.get("autostart", True):
-            return
+        if not self.settings.get("autostart", True) or (self.mode is None and self.cfg.get("modes")):
+            return   # chưa chọn chế độ thì chưa nạp mô hình
         for cam in list(self.cameras.values()):
             if cam.enabled and not cam.running and sum(c.running for c in self.cameras.values()) < self.max_cameras():
                 try:
@@ -786,6 +812,7 @@ def create_app(engine, urls):
         for e in engine.events:
             per_cam.setdefault(e["camera"], {b: 0 for b in BEHAVIOR_NAMES})[e["behavior"]] += 1
         return {
+            "boot": BOOT_ID,
             "counts_by_camera": per_cam,
             "cameras": [c.to_dict() for c in cams],
             "overview": engine.overview(),
@@ -824,7 +851,19 @@ def create_app(engine, urls):
 
     @app.get("/api/info")
     def info():
-        return {"urls": urls, "cameras": list_cameras(), "settings": current_settings(engine)}
+        return {"urls": urls, "cameras": list_cameras(), "settings": current_settings(engine), **engine.modes_info()}
+
+    @app.get("/api/mode")
+    def get_mode():
+        return engine.modes_info()
+
+    @app.post("/api/mode")
+    def set_mode(body: dict):
+        try:
+            engine.set_mode(str(body.get("mode", "")))
+        except ValueError as e:
+            raise HTTPException(400, str(e))
+        return {"ok": True, **engine.modes_info()}
 
     # ---------------------------------------------------------- quản lý camera
     @app.get("/api/cameras")

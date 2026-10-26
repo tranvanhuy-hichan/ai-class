@@ -30,6 +30,14 @@ def _inside(b, p):
     return b[0] <= p[0] <= b[2] and b[1] <= p[1] <= b[3]
 
 
+def _aimed(origin, pos, target, min_cos):
+    """Hướng đi của cổ tay (origin -> pos) có hướng về `target` không (cos góc >= min_cos)."""
+    mx, my = pos[0] - origin[0], pos[1] - origin[1]
+    tx, ty = target[0] - origin[0], target[1] - origin[1]
+    n = (mx * mx + my * my) ** 0.5 * (tx * tx + ty * ty) ** 0.5
+    return n > 0 and (mx * tx + my * ty) / n >= min_cos
+
+
 class FightDetector:
     def __init__(self, cfg=None):
         cfg = cfg or {}
@@ -41,6 +49,8 @@ class FightDetector:
         self.strong_conf = cfg.get("flail_conf", 0.50)    # độ tin cậy khớp tay tối thiểu cho luật xô đẩy
         self.touch_iou = cfg.get("touch_iou", 0.15)       # hai khung chồng nhau tối thiểu để coi là đang xô đẩy
         self.crowd_size = cfg.get("crowd_size", 5)        # từ số người này trở lên là đám đông: đòi nhiều bằng chứng hơn
+        self.swing_gap = cfg.get("swing_gap", 0.3)        # giây: các khung liên tiếp của cùng một lần vung chỉ tính 1 cú
+        self.min_aim = cfg.get("min_aim", 0.4)            # cú đánh phải hướng về người kia (cos góc giữa hướng tay và hướng tới họ)
         self.n_people = 0
         self.reset()
 
@@ -48,6 +58,7 @@ class FightDetector:
         self.last = {}     # id -> (t, {wrist: (x, y)})
         self.events = deque()   # (t, id người vung, id người bị trúng hoặc None)
         self.seen = {}     # id -> lần cuối thấy
+        self.last_swing = {}   # (id, cổ tay) -> thời điểm cú vung gần nhất đã ghi
 
     # ------------------------------------------------------------------
     def update(self, people, t):
@@ -64,6 +75,8 @@ class FightDetector:
         for k in [k for k, s in self.seen.items() if t - s > 5.0]:
             self.seen.pop(k)
             self.last.pop(k, None)
+        for k in [k for k, s in self.last_swing.items() if t - s > self.window]:
+            self.last_swing.pop(k)
 
         pairs = self._pairs(by_id)
         for a, b in pairs:
@@ -91,7 +104,11 @@ class FightDetector:
             speed = ((pos[0] - ox) ** 2 + (pos[1] - oy) ** 2) ** 0.5 / (scale * dt)
             if not self._threshold(dt) <= speed <= MAX_SPEED:
                 continue
-            hit = self._target(p, pos, people)
+            if t - self.last_swing.get((pid, w), -9.0) < self.swing_gap:
+                continue   # vẫn là cùng một lần vung (nhiều khung hình liên tiếp), không đếm thêm
+            hit = self._target(p, pos, people, prev[1][w][:2], self.min_aim)
+            if hit is not None:
+                self.last_swing[(pid, w)] = t
             # Tay chỉ "vung mạnh và chắc chắn" khi nhanh hơn hẳn ngưỡng và khớp tay được thấy rõ (không phải khung xương nhảy)
             strong = speed >= 1.3 * self.swing_speed and min(pos[2], prev[1][w][2]) >= self.strong_conf
             self.events.append((t, pid, hit, strong))
@@ -103,7 +120,7 @@ class FightDetector:
         return self.swing_speed * (1 - 0.5 * k)
 
     @staticmethod
-    def _target(p, pos, people):
+    def _target(p, pos, people, origin=None, min_aim=0.0):
         """Học sinh khác có thân người chứa vị trí cổ tay (gần tâm nhất nếu nhiều người).
         Cổ tay còn nằm trong thân chính mình (người đứng sát, khung chồng nhau) thì không tính là chạm người khác."""
         if _inside(torso_box(p["box"]), pos):
@@ -113,6 +130,8 @@ class FightDetector:
             if q["id"] == p["id"] or not _inside(torso_box(q["box"]), pos):
                 continue
             c = sg.center(q["box"])
+            if origin is not None and not _aimed(origin, pos, c, min_aim):
+                continue   # tay đang rút về hoặc đi chỗ khác, không phải hướng vào người này
             d = (c[0] - pos[0]) ** 2 + (c[1] - pos[1]) ** 2
             if best is None or d < best_d:
                 best, best_d = q["id"], d
@@ -137,7 +156,8 @@ class FightDetector:
         ids = [i for i, ts in flails.items() if len(ts) >= need_flails and i in by_id]
         for i, a in enumerate(ids):
             for b in ids[i + 1:]:
-                if self._touching(by_id[a]["box"], by_id[b]["box"], self.touch_iou):
+                # Ngồi sát nhau mà chỉ múa tay thì không đủ: phải có ít nhất 1 cú vung trúng người kia
+                if frozenset((a, b)) in strikes and self._touching(by_id[a]["box"], by_id[b]["box"], self.touch_iou):
                     out.add(tuple(sorted((a, b))))
         return sorted(out)
 

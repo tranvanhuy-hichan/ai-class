@@ -1,7 +1,7 @@
 """Huấn luyện mô hình phát hiện hành vi (YOLO11 detect) trên bộ dữ liệu định dạng YOLO
 (Roboflow, SCB-Dataset, hoặc ảnh lớp học tự gán nhãn).
 
-  python scripts/train_behavior.py --data data/student-behaviour/data.yaml --epochs 50
+  python scripts/train_behavior.py --data data/nguon/student-behaviour/data.yaml --epochs 50
 
 Sau khi xong:
   1. Mô hình được chép ra weights/behavior.pt

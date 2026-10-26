@@ -171,7 +171,7 @@ bàn ghế, góc camera). Tự thu thập là điểm cộng lớn:
 ```bash
 pip install kagglehub
 python scripts/download_datasets.py eyes
-python scripts/prepare_eye_dataset.py --src data/raw_eyes
+python scripts/prepare_eye_dataset.py --src data/nguon/raw_eyes
 python scripts/train_eye_classifier.py --epochs 20
 ```
 
@@ -189,7 +189,7 @@ hình tự huấn luyện tốt hơn thì cần thu thập ảnh mắt từ chí
 ```bash
 pip install roboflow
 python scripts/download_datasets.py roboflow --api-key <KEY_CỦA_BẠN>
-python scripts/train_behavior.py --data data/student-behaviour/data.yaml --epochs 50
+python scripts/train_behavior.py --data data/nguon/student-behaviour/data.yaml --epochs 50
 ```
 
 Hoặc dùng SCB-Dataset / dữ liệu tự gán nhãn: trỏ `--data` tới file `data.yaml` tương ứng.
