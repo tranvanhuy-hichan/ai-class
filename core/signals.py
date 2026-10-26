@@ -56,6 +56,12 @@ def shoulders(kpts, thr, box=None):
     return None
 
 
+def face_visible(kpts, conf=0.6, min_points=4):
+    """Mặt đang quay về phía camera và thấy rõ: ít nhất `min_points` trong 5 điểm (mũi, 2 mắt, 2 tai) có độ tin cậy cao.
+    Người nằm gục úp mặt xuống bàn thì các điểm này bị che nên không đạt."""
+    return sum(1 for i in HEAD_POINTS if kpts[i][2] >= conf) >= min_points
+
+
 def head_ratio(kpts, thr, box=None):
     """Đầu cao hơn vai bao nhiêu, tính theo đơn vị "độ rộng vai".
 

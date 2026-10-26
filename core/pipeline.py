@@ -400,6 +400,14 @@ class Pipeline:
             p["eye_closed_prob"] = prob
             p["signals"]["eyes_closed"] = prob > r["eye_closed_prob"]
 
+    def _face_up(self, p):
+        """Kiểm tra chéo bằng khung xương: đầu cao hơn vai rõ rệt và thấy rõ mặt thì không thể đang nằm gục úp mặt."""
+        r = self.cfg["rules"]
+        if not r.get("sleep_face_veto", True):
+            return False
+        ratio = p.get("head_ratio")
+        return ratio is not None and ratio >= r.get("sleep_veto_ratio", 0.25) and sg.face_visible(p["kpts"])
+
     def _custom_behaviors(self, frame, people, det, t):
         dets, last = self._custom_cache
         if self._due(last, t, self.aux_interval * self._load):
@@ -426,6 +434,8 @@ class Pipeline:
             matches = [p for p in people if sg.contains(sg.interaction_box(p["box"]), c, pad=0.0)]
             if matches:
                 owner = min(matches, key=lambda p: np.hypot(sg.center(p["box"])[0] - c[0], sg.center(p["box"])[1] - c[1]))
+                if behavior == "sleeping" and self._face_up(owner):
+                    continue   # mô hình báo "ngủ" nhưng mặt đang ngẩng và thấy rõ (ngồi cúi nhẹ, tay đặt trên bàn): bỏ báo nhầm
                 if behavior == "sleeping":
                     # Chỉ coi là gục đầu; "nhắm mắt" phải do phép đo mắt xác nhận, tránh báo ngủ vì 1 lần nhận nhầm
                     owner["signals"]["head_down"] = True
