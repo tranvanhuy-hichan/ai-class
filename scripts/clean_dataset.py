@@ -8,6 +8,8 @@ Quy tắc (duyệt theo thứ tự train, val, test; giữ ảnh gặp trước)
      Vì train được duyệt trước nên ảnh val/test giống ảnh train bị xóa (hết "rò rỉ" làm điểm đo cao ảo).
   2. Khung có diện tích < --min-area (tỉ lệ so với ảnh) bị bỏ khỏi file nhãn.
   3. Ảnh vốn có khung nhưng sau bước 2 hết khung -> xóa (ảnh nền "smoke_" không có khung từ đầu thì giữ).
+  Ngoại lệ --keep-prefix (mặc định "cctv_"): ảnh camera cố định có nền gần như giống hệt nhau nhưng vật nhỏ (điện thoại)
+  nằm ở chỗ khác nhau, nên không bị coi là trùng và không bị lọc khung nhỏ.
 """
 import argparse
 from pathlib import Path
@@ -35,6 +37,7 @@ def main():
     ap.add_argument("--data", default="data/behavior_all")
     ap.add_argument("--hamming", type=int, default=4)
     ap.add_argument("--min-area", type=float, default=0.0002)
+    ap.add_argument("--keep-prefix", default="cctv_", help="ảnh có tên bắt đầu bằng tiền tố này không bị dọn trùng / lọc khung nhỏ")
     ap.add_argument("--apply", action="store_true")
     a = ap.parse_args()
     root = Path(a.data)
@@ -49,6 +52,9 @@ def main():
             h = dhash(img)
             if h is None:
                 drop.append((img, lab)); report[sp]["anh_loi"] += 1
+                continue
+            if a.keep_prefix and img.name.startswith(a.keep_prefix):
+                report[sp]["giu"] += 1
                 continue
             if n_kept:
                 diff = (kept[:n_kept] ^ np.uint64(h)).view(np.uint8)   # số bit khác nhau, tính một lượt bằng numpy

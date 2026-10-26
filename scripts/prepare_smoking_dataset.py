@@ -19,9 +19,12 @@ SPLITS = {"train": "train", "valid": "val", "test": "test"}
 IMG_EXT = {".jpg", ".jpeg", ".png"}
 
 
-def copy_set(src, dst, prefix, remap):
-    """remap: hàm (lớp gốc) -> lớp mới hoặc None (bỏ khung)."""
-    n_img = n_box = 0
+def copy_set(src, dst, prefix, remap, skip_classes=(), max_empty=None):
+    """remap: hàm (lớp gốc) -> lớp mới hoặc None (bỏ khung).
+    skip_classes: ảnh có chứa một trong các lớp gốc này bị bỏ hẳn (vd ảnh có người dùng điện thoại mà ta không giữ nhãn
+        đó: nếu giữ ảnh với nhãn rỗng, mô hình sẽ bị dạy "cầm điện thoại = không có gì").
+    max_empty: số ảnh không nhãn tối đa được giữ làm ảnh nền (None = giữ hết, 0 = bỏ hết ảnh không nhãn)."""
+    n_img = n_box = n_empty = 0
     for sp_src, sp_dst in SPLITS.items():
         img_dir = src / sp_src / "images"
         if not img_dir.exists():
@@ -34,6 +37,9 @@ def copy_set(src, dst, prefix, remap):
             lines = []
             lab = src / sp_src / "labels" / (img.stem + ".txt")
             if lab.exists():
+                if skip_classes and any(len(ln.split()) >= 5 and int(ln.split()[0]) in skip_classes
+                                        for ln in lab.read_text().splitlines()):
+                    continue
                 for ln in lab.read_text().splitlines():
                     parts = ln.split()
                     if len(parts) < 5:
@@ -46,12 +52,16 @@ def copy_set(src, dst, prefix, remap):
                         parts = [parts[0], f"{(min(xs) + max(xs)) / 2:.6f}", f"{(min(ys) + max(ys)) / 2:.6f}",
                                  f"{max(xs) - min(xs):.6f}", f"{max(ys) - min(ys):.6f}"]
                     lines.append(" ".join([str(new)] + parts[1:]))
+            if not lines:
+                if max_empty is not None and n_empty >= max_empty:
+                    continue
+                n_empty += 1
             name = f"{prefix}_{img.name}"
             shutil.copy(img, dst / sp_dst / "images" / name)
             (dst / sp_dst / "labels" / (Path(name).stem + ".txt")).write_text("\n".join(lines) + ("\n" if lines else ""))
             n_img += 1
             n_box += len(lines)
-    print(f"  {prefix}: {n_img} ảnh, {n_box} khung")
+    print(f"  {prefix}: {n_img} ảnh ({n_empty} không nhãn), {n_box} khung")
 
 
 def main():

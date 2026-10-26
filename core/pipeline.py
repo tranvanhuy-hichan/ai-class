@@ -177,8 +177,11 @@ class Pipeline:
         if not self.has_cuda:
             print("[i] Đang chạy chế độ CPU (máy không có GPU) - áp dụng bộ tối ưu tiết kiệm tài nguyên.")
 
-        self.pose = YOLO(str(res(m["pose"])))
-        self.obj = YOLO(str(res(m["object"]))) if "phone" in self.behaviors else None   # chỉ dùng để tìm điện thoại
+        # Máy không GPU (kể cả bộ cài Windows dùng PyTorch CPU) tự chuyển sang mô hình nhẹ hơn nếu config có khai báo
+        pose_path = m.get("pose_cpu") if not self.has_cuda and m.get("pose_cpu") else m["pose"]
+        obj_path = m.get("object_cpu") if not self.has_cuda and m.get("object_cpu") else m["object"]
+        self.pose = YOLO(str(res(pose_path)))
+        self.obj = YOLO(str(res(obj_path))) if "phone" in self.behaviors else None   # chỉ dùng để tìm điện thoại
 
         self.eye = self.face = None
         method = m.get("eye_method", "mediapipe") if "eyes_closed" in self.behaviors else "off"

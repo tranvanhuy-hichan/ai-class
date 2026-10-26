@@ -9,6 +9,7 @@ Nguồn:
   student-classroom-activity   phone, sleep, study (giữ nguyên)
   phone-in-hand-detection      phone
   student-behaviour (Burak)    looking at phone -> phone, sleeping -> sleep, listening to lesson -> study
+  classroom-cell-phone-detection  phone (camera giám sát lớp, điện thoại nhỏ); bỏ lớp person; miễn dọn trùng (tiền tố cctv_)
   smoking_raw                  chỉ giữ khung điếu thuốc; ảnh uống nước giữ làm ảnh nền
   student-behavior-analysis    Sleeping -> sleep, Reading -> study (các lớp khác bỏ khung)
   student-behaviors (prcv)     Sleeping -> sleep, Focusing -> study; Using Phone -> phone chỉ khi có --prcv-phone
@@ -40,10 +41,15 @@ def main():
     # student-behaviour: 0 doesn't listen, 1 listening, 2 looking at phone, 3 sleeping
     copy_set(ROOT / "data/nguon/student-behaviour", dst, "burak", {1: 2, 2: 0, 3: 1}.get)
     # student-behavior-analysis: 0 Looking Forward, 1 Raising Hand, 2 Reading, 3 Sleeping, 4 Turning Around
-    copy_set(ROOT / "data/nguon/student-behavior-analysis-a6nde", dst, "sba", {2: 2, 3: 1}.get)
+    # Các ảnh còn lại (giơ tay, nhìn thẳng, quay đầu) không có điện thoại hay nằm gục nên là ảnh nền hợp lệ, chỉ giữ một ít
+    copy_set(ROOT / "data/nguon/student-behavior-analysis-a6nde", dst, "sba", {2: 2, 3: 1}.get, max_empty=300)
     # student-behaviors: 0 Distracting, 1 Focusing, 2 Hand Raising, 3 Sleeping, 4 Using Phone, 5 Walking
     prcv_map = {1: 2, 3: 1, **({4: 0} if a.prcv_phone else {})}
-    copy_set(ROOT / "data/nguon/student-behaviors", dst, "prcv", prcv_map.get)
+    # Bỏ hẳn ảnh có Distracting (hay kèm điện thoại) và, nếu không giữ nhãn điện thoại, cả ảnh có Using Phone
+    prcv_skip = {0} if a.prcv_phone else {0, 4}
+    copy_set(ROOT / "data/nguon/student-behaviors", dst, "prcv", prcv_map.get, skip_classes=prcv_skip, max_empty=0)
+    # Camera giám sát lớp học từ góc cao, điện thoại rất nhỏ (lớp 0 = cell-phones, lớp 1 = person bỏ). Đúng kiểu camera xa của bài toán
+    copy_set(ROOT / "data/nguon/classroom-cell-phone-detection", dst, "cctv", {0: 0}.get, max_empty=0)
     if a.with_smoking:
         copy_set(ROOT / a.smoking, dst, "smoke", lambda c: 3 if c == 1 else None)
     (dst / "data.yaml").write_text(

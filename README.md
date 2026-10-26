@@ -121,6 +121,19 @@ Khung hình ─► YOLO11-pose ─► người + ID theo dõi + 17 điểm khung
   không báo liên tục cùng một học sinh.
 - **Theo dõi (tracking)**: ByteTrack gán ID cố định cho từng học sinh qua các khung hình.
 
+### Hai chế độ: Lớp học và Hành lang
+
+Mỗi lần mở app, bạn chọn nơi đặt camera (đổi lại được bằng nút ở thanh trên cùng). Chỉ các mô hình của chế độ đó được nạp và chạy:
+
+| Chế độ | Hành vi | Mô hình |
+|---|---|---|
+| **Lớp học** | Điện thoại, gục đầu xuống bàn, ngủ gục, nhắm mắt | Khung xương, phát hiện điện thoại, `weights/behavior_lop.pt` (phone, sleep, study), MediaPipe (mắt) |
+| **Hành lang** | Đánh nhau, hút thuốc | Khung xương cộng luật chuyển động ([core/fight.py](core/fight.py)), `weights/behavior.pt` (điếu thuốc) |
+
+Cấu hình ở mục `modes` trong [config.yaml](config.yaml). Máy không có GPU tự dùng mô hình nhẹ (`pose_cpu`, `object_cpu`).
+
+Đánh nhau **không** phải mô hình học sâu riêng mà là luật dựa trên khung xương (tốc độ cổ tay, vị trí chạm). Hút thuốc hiện là phần yếu nhất (bắt khoảng một nửa số ảnh có điếu thuốc trong bộ kiểm tra công khai).
+
 ### Dùng cho cả lớp học / máy tính yếu
 
 Đo thực tế (ảnh 1080p, YOLO11n):
@@ -149,6 +162,16 @@ Khung hình ─► YOLO11-pose ─► người + ID theo dõi + 17 điểm khung
 | [Roboflow: studentactivity](https://universe.roboflow.com/studentactivity) | Nhiều bộ hoạt động học sinh trong lớp | Tham khảo / bổ sung |
 | [Kaggle: yawn-eye-dataset-new](https://www.kaggle.com/datasets/serenaraju/yawn-eye-dataset-new) | Ảnh mắt **mở/nhắm**, miệng ngáp/không ngáp | Huấn luyện mô hình mắt (mục 5.1) |
 | [MRL Eye Dataset](http://mrl.cs.vsb.cz/eyedataset) | ~85.000 ảnh mắt mở/nhắm của 37 người | Bổ sung cho mô hình mắt |
+
+Mô hình `behavior_lop.pt` được huấn luyện trên bộ gộp từ các nguồn sau (đa số CC BY 4.0, cần ghi nguồn khi dùng lại):
+[student-behavior-analysis](https://universe.roboflow.com/student-action-recognition-wbkrh/student-behavior-analysis-a6nde),
+[student-behaviors (prcv)](https://universe.roboflow.com/prcv/student-behaviors),
+[student-classroom-activity](https://universe.roboflow.com/studentactivity/student-classroom-activity),
+[Classroom-Cell-Phone-Detection](https://universe.roboflow.com/computervisionprojects-siakl/classroom-cell-phone-detection),
+[phone-in-hand-detection](https://universe.roboflow.com/phone-in-hand) và
+[student-behaviour](https://universe.roboflow.com/burak-koyfx/student-behaviour).
+Quy trình gộp, dọn ảnh trùng, huấn luyện và so sánh: xem [TAI_LIEU_DU_LIEU_HUAN_LUYEN.md](TAI_LIEU_DU_LIEU_HUAN_LUYEN.md)
+và các script `prepare_merged_dataset.py`, `clean_dataset.py`, `compare_models.py` trong [scripts/](scripts/).
 
 Hãy đọc giấy phép (license) của từng bộ và ghi nguồn trong báo cáo.
 

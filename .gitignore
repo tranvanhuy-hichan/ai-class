@@ -28,3 +28,9 @@ Thumbs.db
 yolo11n-cls.pt
 yolo11s.pt
 
+
+# Mô hình gốc của Ultralytics lớn (tự tải về lần đầu) và bản sao lưu mô hình cũ
+weights/yolo11[msx]*.pt
+weights/yolo11[msx]-*.pt
+weights/*_cu.pt
+!weights/yolo11s-pose.pt

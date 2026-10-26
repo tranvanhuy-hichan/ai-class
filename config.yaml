@@ -4,6 +4,9 @@
 models:
   pose: weights/yolo11m-pose.pt   # Nhận diện người + 17 điểm khung xương (tự tải về lần đầu). Bản n (yolo11n-pose.pt) nhẹ hơn nhưng bỏ sót khoảng một nửa số bạn ngồi sát/nằm gục
   object: weights/yolo11m.pt      # Nhận diện vật thể COCO, dùng lớp "cell phone". Bản m bắt điện thoại tốt hơn bản n; máy yếu dùng yolo11n.pt
+  # Máy KHÔNG có GPU (và bộ cài Windows, vốn dùng PyTorch CPU) tự dùng 2 mô hình nhẹ này thay cho 2 dòng trên
+  pose_cpu: weights/yolo11s-pose.pt
+  object_cpu: weights/yolo11n.pt
   # Cách phát hiện nhắm mắt:
   #   mediapipe  - đo độ nhắm mắt bằng 468 điểm khuôn mặt (MediaPipe), ổn định, không cần huấn luyện
   #   classifier - mô hình mắt mở/nhắm tự huấn luyện (scripts/train_eye_classifier.py)
@@ -18,8 +21,9 @@ detection:
   person_conf: 0.30            # Ngưỡng nhận người; thấp hơn để bắt cả bạn nằm gục (khung xương bị che)
   custom_conf:                 # Ngưỡng riêng từng hành vi của mô hình tự huấn luyện (không ghi thì dùng person_conf)
     phone: 0.50                # Cao hơn để bớt báo nhầm khi bạn cúi viết bài / chống cằm
-    sleeping: 0.35
-  smoking_conf: 0.50           # Ngưỡng riêng cho điếu thuốc. 0.50 báo nhầm ~2% ảnh lớp học, 0.30 báo nhầm ~6% (đã đo)
+    sleeping: 0.50
+  smoking_conf: 0.35           # Ngưỡng riêng cho điếu thuốc (điếu thuốc nhỏ nên thấp hơn các hành vi khác). Đã đo: 0.50 bắt 41% ảnh có thuốc,
+                               # 0.30 bắt 55%; trên 30 ảnh không có thuốc và 108 khung video lớp học đều 0 báo nhầm ở cả 2 mức
   phone_conf: 0.25             # Điện thoại (0.15 bắt được nhiều hơn nhưng hay nhầm vật khác như hộp bút, sổ, thước)
   keypoint_conf: 0.30          # Nhận diện khung xương nhạy hơn
   imgsz: 960                   # Tối ưu cho lớp học: 960. 1280 chỉ dùng khi có GPU mạnh (RTX 3050 bị giật)
