@@ -38,13 +38,14 @@ performance:                   # Tối ưu cho máy yếu (giây; 0 = chạy m�
 rules:
   # Tỉ lệ (khoảng cách đầu cao hơn vai) / (độ rộng vai).
   # Ngồi thẳng ~0.5-1.0; cúi đầu đọc/viết bài vẫn dương; chỉ khi NẰM GỤC xuống bàn (đầu ngang hoặc thấp hơn vai) mới <= 0.
-  # Gục đầu bằng khung xương hay lẫn bạn đang cúi viết bài và hay sót bạn nằm gục ở xa, nên mặc định TẮT (đã có mô hình tự huấn luyện
-  # nhận ra nằm gục). Bật trong Cài đặt nếu camera đặt gần, thấy rõ vai và đầu.
-  head_down_pose: false
+  # Gục đầu bằng khung xương: báo khi đầu thấp hơn mức dưới đây VÀ không thấy mặt (úp mặt xuống bàn), bổ sung cho mô hình tự huấn luyện
+  # (mô hình hay sót bạn nằm gục ở xa). Bạn cúi viết bài vẫn thấy mặt nên không bị báo. Tắt trong Cài đặt nếu thấy báo nhầm.
+  head_down_pose: true
+  head_down_face_max: 1        # Số điểm mặt (mũi, mắt, tai) thấy rõ tối đa để vẫn coi là úp mặt
   # Mô hình tự huấn luyện hay nhầm "ngồi cúi nhẹ, hai tay đặt trên bàn" thành ngủ. Kiểm tra chéo: nếu khung xương thấy mặt rõ
   # và đầu cao hơn vai từ ngưỡng này trở lên thì bỏ báo ngủ/gục đầu của mô hình (người nằm gục úp mặt thì không thấy mặt).
   sleep_face_veto: true
-  sleep_veto_ratio: 0.25
+  sleep_veto_ratio: 0.15
   head_down_ratio: 0.05        # Dưới mức này mới coi là nằm gục. Tăng lên (vd 0.15) nếu muốn nhạy hơn
   # Điện thoại được tính là "đang cầm" nếu cách cổ tay/bàn < hệ số * độ rộng vai
   phone_wrist_factor: 1.10

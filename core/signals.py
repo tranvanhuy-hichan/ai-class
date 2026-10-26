@@ -56,6 +56,53 @@ def shoulders(kpts, thr, box=None):
     return None
 
 
+def dedupe_people(boxes, kpts, confs, kp_conf=0.30, rel=0.15, min_common=4, iou_hard=0.65):
+    """Gộp các khung trùng của cùng một người (mô hình hay trả 2-5 khung lệch nhau cho một người ngồi sát camera).
+
+    Hai khung là cùng một người khi các điểm khung xương chung (độ tin cậy >= kp_conf) lệch nhau trung bình dưới
+    `rel` lần bề rộng khung (người khác nhau thì khung xương cách xa nhau), hoặc khi hai khung chồng nhau rất nhiều
+    (IoU >= iou_hard) mà không đủ điểm chung để so. Giữ khung có độ tin cậy cao hơn. Trả về chỉ số các khung được giữ."""
+    order = sorted(range(len(boxes)), key=lambda i: -float(confs[i]))
+    kept = []
+    for i in order:
+        dup = False
+        for j in kept:
+            if box_iou(boxes[i], boxes[j]) < 0.2:
+                continue
+            common = [k for k in range(len(kpts[i])) if kpts[i][k][2] >= kp_conf and kpts[j][k][2] >= kp_conf]
+            if len(common) >= min_common:
+                d = float(np.mean([np.hypot(kpts[i][k][0] - kpts[j][k][0], kpts[i][k][1] - kpts[j][k][1]) for k in common]))
+                w = max(1.0, float(min(boxes[i][2] - boxes[i][0], boxes[j][2] - boxes[j][0])))
+                dup = d < rel * w
+            else:
+                dup = box_iou(boxes[i], boxes[j]) >= iou_hard
+            if dup:
+                break
+        if not dup:
+            kept.append(i)
+    return sorted(kept)
+
+
+def owner_of_detection(det_box, people, kp_conf=0.30, pad=0.10):
+    """Học sinh nào là chủ của một phát hiện lớn (ngủ/gục) của mô hình: người có KHUNG XƯƠNG nằm trong khung phát hiện.
+
+    Chỉ xét khung người có chứa phát hiện thì sai khi khung người rất to (bạn ngồi sát camera, tay dang rộng) chùm lên bạn nằm
+    gục ngay cạnh: phát hiện của bạn kia bị gán cho bạn này. Trả về học sinh hoặc None nếu không ai khớp."""
+    w, h = det_box[2] - det_box[0], det_box[3] - det_box[1]
+    box = [det_box[0] - pad * w, det_box[1] - pad * h, det_box[2] + pad * w, det_box[3] + pad * h]
+    best, best_score = None, 0.0
+    for p in people:
+        pts = [k for k in p["kpts"] if k[2] >= kp_conf]
+        inside = sum(1 for k in pts if box[0] <= k[0] <= box[2] and box[1] <= k[1] <= box[3]) / len(pts) if pts else 0.0
+        iou = box_iou(det_box, p["box"])
+        if inside < 0.5 and iou < 0.4:
+            continue
+        score = 0.6 * inside + 0.4 * iou
+        if score > best_score:
+            best, best_score = p, score
+    return best
+
+
 def face_visible(kpts, conf=0.6, min_points=4):
     """Mặt đang quay về phía camera và thấy rõ: ít nhất `min_points` trong 5 điểm (mũi, 2 mắt, 2 tai) có độ tin cậy cao.
     Người nằm gục úp mặt xuống bàn thì các điểm này bị che nên không đạt."""
@@ -69,6 +116,11 @@ def head_ratio(kpts, thr, box=None):
     Thấy vai mà không thấy điểm nào trên mặt -> mặt đang úp xuống bàn -> trả về -1.0.
     Nếu học sinh gục thấp trong khung người -> trả về <= 0.
     """
+    # Không thấy cả 2 vai mà mặt lại thấy rõ (webcam chỉ quay phần đầu, hoặc vai bị khuất mà mặt quay về camera):
+    # không thể suy ra là đang gục úp, vì mặt gục xuống bàn thì bị che. Không kết luận.
+    soft = max(0.18, thr * 0.6)
+    if kpts[L_SHOULDER][2] < soft and kpts[R_SHOULDER][2] < soft and face_visible(kpts):
+        return None
     sh = shoulders(kpts, thr, box)
     if sh is None:
         if box is not None:

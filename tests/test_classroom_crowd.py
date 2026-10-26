@@ -38,6 +38,54 @@ def test_face_down_face_invisible():
     assert ratio == -1.0, f"Úp mặt không thấy điểm mặt nào phải trả về -1.0, nhận được: {ratio}"
 
 
+def test_webcam_head_only_not_head_down():
+    """Webcam cận chỉ thấy đầu (không thấy vai), mặt thấy rõ: không được suy ra là đang gục xuống bàn."""
+    kpts = np.zeros((17, 3))
+    kpts[sg.NOSE] = [150, 120, 0.95]
+    kpts[sg.L_EYE] = [130, 100, 0.95]
+    kpts[sg.R_EYE] = [170, 100, 0.95]
+    kpts[sg.L_EAR] = [110, 110, 0.9]
+    kpts[sg.R_EAR] = [190, 110, 0.9]
+    box = [60, 40, 240, 300]
+    ratio = sg.head_ratio(kpts, 0.30, box)
+    assert ratio is None, f"Thấy rõ mặt mà không thấy vai thì không kết luận gục, nhận được: {ratio}"
+    assert sg.face_visible(kpts)
+    kpts[:5, 2] = 0.0   # úp mặt: các điểm mặt bị che
+    assert sg.head_ratio(kpts, 0.30, box) == -1.0
+
+
+def test_dedupe_people_merges_same_person_only():
+    """Hai khung lệch nhau của CÙNG một người bị gộp, hai học sinh KHÁC nhau ngồi sát nhau thì giữ cả hai."""
+    def person(cx, shift=0.0):
+        k = np.zeros((17, 3))
+        for i, (dx, dy) in {sg.NOSE: (0, 0), sg.L_EYE: (-15, -12), sg.R_EYE: (15, -12), sg.L_SHOULDER: (-70, 150), sg.R_SHOULDER: (70, 150),
+                            sg.L_WRIST: (-90, 300), sg.R_WRIST: (90, 300)}.items():
+            k[i] = [cx + dx + shift, 100 + dy, 0.9]
+        return k
+    box = lambda cx, w=240: np.array([cx - w / 2, 20, cx + w / 2, 400.0])
+    # cùng một người: khung thứ 2 lệch 60 px, khung xương lệch 6 px
+    boxes = np.array([box(300), box(360)]); kpts = np.stack([person(300), person(300, 6)])
+    assert sg.dedupe_people(boxes, kpts, np.array([0.9, 0.7])) == [0]
+    # hai học sinh khác nhau, khung chồng nhau ~30%, khung xương cách nhau 140 px
+    boxes = np.array([box(300), box(440)]); kpts = np.stack([person(300), person(440)])
+    assert sg.dedupe_people(boxes, kpts, np.array([0.9, 0.8])) == [0, 1]
+
+
+def test_owner_of_detection_uses_skeleton_not_big_box():
+    """Khung người của bạn ngồi sát camera rất to và chùm lên bạn nằm gục bên cạnh: phát hiện 'ngủ' phải thuộc bạn nằm gục."""
+    def person(box, pts):
+        k = np.zeros((17, 3))
+        for i, (x, y) in zip((sg.NOSE, sg.L_SHOULDER, sg.R_SHOULDER), pts):
+            k[i] = [x, y, 0.9]
+        return {"id": 0, "box": np.array(box, float), "kpts": k, "signals": {}}
+    boy = person([300, 100, 700, 600], [(500, 200), (400, 330), (600, 330)])      # to, bao cả vùng bên trái
+    girl = person([320, 380, 460, 520], [(380, 450), (340, 470), (430, 470)])     # nhỏ, nằm gục bên trong khung của bạn nam
+    boy["id"], girl["id"] = 1, 2
+    det = [310, 370, 470, 530]   # khung 'ngủ' bao quanh bạn nữ
+    assert sg.owner_of_detection(det, [boy, girl])["id"] == 2
+    assert sg.owner_of_detection([900, 900, 950, 950], [boy, girl]) is None
+
+
 def test_phone_association_wrist_vs_occluded():
     """Học sinh A đang cầm điện thoại (thấy cổ tay), học sinh B ở gần nhưng không cầm."""
     kpts_a = np.zeros((17, 3))
@@ -89,6 +137,12 @@ if __name__ == "__main__":
     print("OK test_one_shoulder_occluded_head_down")
     test_face_down_face_invisible()
     print("OK test_face_down_face_invisible")
+    test_webcam_head_only_not_head_down()
+    print("OK test_webcam_head_only_not_head_down")
+    test_dedupe_people_merges_same_person_only()
+    print("OK test_dedupe_people_merges_same_person_only")
+    test_owner_of_detection_uses_skeleton_not_big_box()
+    print("OK test_owner_of_detection_uses_skeleton_not_big_box")
     test_phone_association_wrist_vs_occluded()
     print("OK test_phone_association_wrist_vs_occluded")
     test_spatial_tracker_id_continuity()

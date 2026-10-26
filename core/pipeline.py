@@ -256,6 +256,10 @@ class Pipeline:
             boxes = res.boxes.xyxy.cpu().numpy()
             raw_ids = res.boxes.id.int().cpu().tolist() if res.boxes.id is not None else None
             kpts = res.keypoints.data.cpu().numpy()  # (N, 17, 3)
+            keep = sg.dedupe_people(boxes, kpts, res.boxes.conf.cpu().numpy())   # gộp khung trùng của cùng một người
+            if len(keep) < len(boxes):
+                boxes, kpts = boxes[keep], kpts[keep]
+                raw_ids = [raw_ids[i] for i in keep] if raw_ids is not None else None
             ids = self.tracker.assign_ids(raw_ids, boxes, t)
 
             for tid, box, kp in zip(ids, boxes, kpts):
@@ -263,8 +267,12 @@ class Pipeline:
                 if np.max(kp[:, 2]) < 0.40:
                     continue
                 ratio = sg.head_ratio(kp, thr, box)
+                # Khung xương chỉ báo gục khi đầu thấp VÀ không thấy mặt (úp mặt xuống bàn). Bạn cúi viết bài hay ngồi ở xa
+                # vẫn thấy mặt nên không bị báo nhầm.
+                face_pts = sum(1 for k in sg.HEAD_POINTS if kp[k][2] >= 0.5)
                 is_head_down = ("head_down" in self.behaviors and r.get("head_down_pose", False)
-                                and ratio is not None and ratio < r["head_down_ratio"])
+                                and ratio is not None and ratio < r["head_down_ratio"]
+                                and face_pts <= r.get("head_down_face_max", 1))
                 people.append({
                     "id": tid, "box": box, "kpts": kp, "head_ratio": ratio,
                     "signals": {"head_down": is_head_down},
@@ -406,7 +414,8 @@ class Pipeline:
         if not r.get("sleep_face_veto", True):
             return False
         ratio = p.get("head_ratio")
-        return ratio is not None and ratio >= r.get("sleep_veto_ratio", 0.25) and sg.face_visible(p["kpts"])
+        # ratio None = không thấy vai nhưng thấy rõ mặt (webcam chỉ quay đầu): cũng không thể đang gục úp
+        return sg.face_visible(p["kpts"]) and (ratio is None or ratio >= r.get("sleep_veto_ratio", 0.25))
 
     def _custom_behaviors(self, frame, people, det, t):
         dets, last = self._custom_cache
@@ -430,10 +439,15 @@ class Pipeline:
             if not behavior:
                 continue
             c = sg.center(box)
-            # Tìm học sinh có vùng tương tác chứa tâm phát hiện
-            matches = [p for p in people if sg.contains(sg.interaction_box(p["box"]), c, pad=0.0)]
+            if behavior == "sleeping":
+                # Phát hiện "ngủ" là khung to bao cả người: gán theo khung xương nằm trong khung (không gán nhầm cho bạn đứng sát/chùm khung)
+                owner = sg.owner_of_detection(box, people)
+                matches = [owner] if owner is not None else []
+            else:
+                # Tìm học sinh có vùng tương tác chứa tâm phát hiện (điện thoại, điếu thuốc nhỏ nằm ở tay/bàn)
+                matches = [p for p in people if sg.contains(sg.interaction_box(p["box"]), c, pad=0.0)]
+                owner = min(matches, key=lambda p: np.hypot(sg.center(p["box"])[0] - c[0], sg.center(p["box"])[1] - c[1])) if matches else None
             if matches:
-                owner = min(matches, key=lambda p: np.hypot(sg.center(p["box"])[0] - c[0], sg.center(p["box"])[1] - c[1]))
                 if behavior == "sleeping" and self._face_up(owner):
                     continue   # mô hình báo "ngủ" nhưng mặt đang ngẩng và thấy rõ (ngồi cúi nhẹ, tay đặt trên bàn): bỏ báo nhầm
                 if behavior == "sleeping":
