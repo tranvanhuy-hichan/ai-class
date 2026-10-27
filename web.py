@@ -1115,7 +1115,7 @@ def current_settings(engine):
     s["telegram_token"] = engine.settings.get("telegram_token", "")
     s["telegram_chat_id"] = engine.settings.get("telegram_chat_id", "")
     s["show_skeleton"] = engine.settings.get("show_skeleton", False)
-    s["head_down_pose"] = bool(engine.cfg["rules"].get("head_down_pose", False))
+    s["head_down_pose"] = bool(engine.cfg["rules"].get("head_down_pose", True))
     s["autostart"] = engine.settings.get("autostart", True)
     s["parallel"] = engine.parallel()
     s["multi_camera"] = engine.multi()

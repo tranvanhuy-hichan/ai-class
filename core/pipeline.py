@@ -270,7 +270,7 @@ class Pipeline:
                 # Khung xương chỉ báo gục khi đầu thấp VÀ không thấy mặt (úp mặt xuống bàn). Bạn cúi viết bài hay ngồi ở xa
                 # vẫn thấy mặt nên không bị báo nhầm.
                 face_pts = sum(1 for k in sg.HEAD_POINTS if kp[k][2] >= 0.5)
-                is_head_down = ("head_down" in self.behaviors and r.get("head_down_pose", False)
+                is_head_down = ("head_down" in self.behaviors and r.get("head_down_pose", True)
                                 and ratio is not None and ratio < r["head_down_ratio"]
                                 and face_pts <= r.get("head_down_face_max", 1))
                 people.append({
