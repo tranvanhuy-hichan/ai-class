@@ -105,7 +105,10 @@ class BehaviorRules:
         new_alerts = []
         for behavior in active:
             last = st.last_alert.get(behavior)
-            if last is None or t - last >= self.timing["cooldown"]:
+            wait = self.timing["cooldown"]
+            if behavior in ("head_down", "sleeping"):
+                wait = self.timing.get("cooldown_posture", wait)   # gục/ngủ kéo dài: nhắc thưa hơn, tránh báo dồn dập cùng một bạn
+            if last is None or t - last >= wait:
                 st.last_alert[behavior] = t
                 new_alerts.append(behavior)
         return active, new_alerts

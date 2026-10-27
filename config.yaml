@@ -65,6 +65,7 @@ timing:                        # Hành vi phải kéo dài bao lâu (giây) mớ
   smoking: 2.0                 # Thấy điếu thuốc ở miệng/tay liên tục 2 giây -> cảnh báo
   fighting: 0.5                # Đánh nhau kéo dài 0.5 giây (cú đánh đã được đếm trong cửa sổ vài giây) -> cảnh báo
   cooldown: 10.0               # Thời gian chờ giữa 2 lần cảnh báo cùng hành vi
+  cooldown_posture: 60.0       # Riêng gục đầu/ngủ gật: cùng một bạn còn gục thì 60 giây mới nhắc lại
 
 # Chế độ chạy: khi mở app chọn 1 chế độ, chỉ các hành vi và mô hình của chế độ đó được chạy (nhẹ hơn nhiều).
 modes:
