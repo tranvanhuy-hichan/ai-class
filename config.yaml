@@ -9,7 +9,7 @@ models:
   object_cpu: weights/yolo11n.pt
   # Cách phát hiện nhắm mắt:
   #   mediapipe  - đo độ nhắm mắt bằng 468 điểm khuôn mặt (MediaPipe), ổn định, không cần huấn luyện
-  #   classifier - mô hình mắt mở/nhắm tự huấn luyện (scripts/train_eye_classifier.py)
+  #   classifier - mô hình mắt mở/nhắm tự huấn luyện (tools/train_eye_classifier.py)
   #   off        - tắt, chỉ dùng gục đầu lâu để báo ngủ gục
   eye_method: mediapipe
   face_landmarker: weights/face_landmarker.task   # tự tải về nếu chưa có
@@ -80,7 +80,7 @@ modes:
     behaviors: [fighting, smoking]
     custom_behavior: weights/behavior.pt      # bản cũ bắt hút thuốc tốt hơn bản mới
 
-# Phát hiện đánh nhau từ khung xương (core/fight.py).
+# Phát hiện đánh nhau từ khung xương (src/lophocai/detection/fight.py).
 fight:
   swing_speed: 5.0             # Cổ tay nhanh hơn mức này (độ rộng vai / giây) mới tính là một cú vung
   window: 2.5                  # Đếm các cú đánh trong khoảng thời gian này (giây)

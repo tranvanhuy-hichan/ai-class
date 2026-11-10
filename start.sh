@@ -10,4 +10,4 @@ if [ ! -f .venv/installed.txt ]; then
   .venv/bin/python -m pip install -r requirements.txt && echo ok > .venv/installed.txt
 fi
 echo "[2/2] Đang khởi động..."
-exec .venv/bin/python web.py "$@"
+PYTHONPATH=src exec .venv/bin/python -m lophocai "$@"

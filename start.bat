@@ -15,5 +15,6 @@ if not exist .venv\installed.txt (
   .venv\Scripts\python -m pip install -r requirements.txt && echo ok> .venv\installed.txt
 )
 echo [2/2] Dang khoi dong...
-.venv\Scripts\python web.py %*
+set PYTHONPATH=src
+.venv\Scripts\python -m lophocai %*
 pause

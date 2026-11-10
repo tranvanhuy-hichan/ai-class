@@ -1,13 +1,10 @@
 """Kiểm tra bộ phát hiện đánh nhau bằng khung xương dựng sẵn (không cần camera)."""
-import sys
-from pathlib import Path
 
 import numpy as np
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from core import signals as sg
-from core.fight import FightDetector
-from core.rules import BehaviorRules
+from lophocai.detection import signals as sg
+from lophocai.detection.fight import FightDetector
+from lophocai.detection.rules import BehaviorRules
 
 TIMING = {"phone": 2, "head_down": 3, "sleeping": 8, "eyes_closed": 3, "grace": 1.2, "cooldown": 15,
           "fighting": 1.0}

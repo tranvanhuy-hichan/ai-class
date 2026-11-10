@@ -20,7 +20,7 @@ Tải bộ cài ở mục [Releases](https://github.com/tranvanhuy-hichan/ai-cla
 | **Windows 10/11** | `LopHocAI-Setup-x.y.z.exe` | Bấm đúp, chọn Next → Install. Mở bằng biểu tượng **Lớp học AI** ngoài Desktop |
 | **Ubuntu / Debian** | `lophocai_x.y.z_amd64.deb` | `sudo apt install ./lophocai_x.y.z_amd64.deb`, rồi mở **Lớp học AI** trong menu ứng dụng hoặc gõ `lophocai` |
 
-Mở app sẽ hiện một cửa sổ dòng lệnh (**đừng tắt** khi đang dùng) và trình duyệt tự mở trang giám sát.
+Mở **Lớp học AI** sẽ hiện cửa sổ giám sát (ứng dụng desktop, không cần trình duyệt).
 Dữ liệu lưu ở `%LOCALAPPDATA%\LopHocAI` (Windows) hoặc `~/.local/share/LopHocAI` (Ubuntu).
 
 **Tự build bộ cài:**
@@ -36,36 +36,39 @@ Cần cài [Python](https://www.python.org/downloads/) 3.10 trở lên. Trên Wi
 - **Windows**: bấm đúp `start.bat`
 - **Linux / macOS**: `./start.sh`
 
-Lần đầu chạy, máy tự cài thư viện (mất 5–15 phút) rồi tự mở trình duyệt ở `http://localhost:8000`.
+Lần đầu chạy, máy tự cài thư viện (mất 5–15 phút) rồi mở cửa sổ ứng dụng.
 Từ lần sau chỉ mất vài giây. Khi Windows hỏi tường lửa, chọn **Allow** để điện thoại kết nối được.
 
+Cách khác: `pip install -e .` rồi gõ `lophocai` (hoặc `python -m lophocai`). Chạy kiểm thử: `pytest`.
+
 Ứng dụng chạy hoàn toàn trên **một máy**:
-- **Chỉ người ngồi ở máy đó xem được.** Trang web chỉ mở trên `localhost`, máy khác trong mạng không vào được.
-  Video không gửi đi đâu.
+- **Chỉ người ngồi ở máy đó xem được.** Video không gửi đi đâu, xử lý hoàn toàn trên máy.
 - **Nguồn camera**: webcam của máy, camera của trường (RTSP), điện thoại làm camera, hoặc video có sẵn.
 - Điện thoại làm camera kết nối qua Wi-Fi (cổng HTTPS 8443) nhưng **chỉ gửi được hình**, phải quét mã QR
   có mã bí mật, và mã này đổi mỗi lần mở app.
-- Dữ liệu (nhật ký, ảnh cảnh báo, cài đặt) lưu ở thư mục `appdata/` khi chạy từ code, hoặc
+- Dữ liệu (nhật ký, ảnh cảnh báo, cài đặt) lưu ở thư mục `workspace/appdata/` khi chạy từ code, hoặc
   `%LOCALAPPDATA%\LopHocAI` khi cài bằng bộ cài Windows.
 
-### Dùng trên trang web
+### Cách dùng
 
 | Muốn | Làm |
 |---|---|
-| Dùng webcam máy tính | **⚙ Cài đặt → Webcam 0** |
-| Dùng điện thoại làm camera (không cần cài app) | Bấm **📱 Camera điện thoại**, dùng điện thoại cùng Wi-Fi quét mã, bấm **Bắt đầu**. Trình duyệt báo "không an toàn" thì chọn *Nâng cao → Tiếp tục* |
-| Dùng camera của trường (Hikvision, Dahua, Imou...) | **⚙ Cài đặt**, dán link `rtsp://...`, bấm **Kết nối** (trang có sẵn địa chỉ mẫu). Máy phải cùng mạng với camera |
-| Demo bằng video có sẵn | **⚙ Cài đặt → Video có sẵn → Tải lên & chạy** (video tự phát lặp lại) |
-| Nhận cảnh báo qua Telegram | **⚙ Cài đặt → Thông báo Telegram**, làm theo 3 bước trên trang |
-| Xem lớp đang tập trung đến đâu | Thẻ **Mức độ tập trung** cạnh video: số 0–100 theo thời gian thực, trung bình, phút thấp nhất và biểu đồ theo từng phút (30 phút đến cả ngày). Điểm trung bình từng phút được lưu ở `logs/focus.csv` |
-| Hình bị ngược trái-phải, camera đặt nghiêng, phòng tối | Trên video bấm nút **⇄ Lật ngang**, hoặc nút chỉnh hình bên cạnh để **lật dọc, xoay 90°/180°, tăng độ sáng, phóng to giữa khung**. Nhớ riêng cho từng camera, áp dụng ngay |
-| Chỉnh độ nhạy | **⚙ Cài đặt → Độ nhạy**, có tác dụng ngay |
-| Lấy số liệu cho báo cáo | **Thống kê → Tải nhật ký** (mở bằng Excel) |
+| Dùng webcam máy tính | **Camera → Thêm camera → Webcam / USB** |
+| Dùng điện thoại làm camera (không cần cài app) | **Camera → Thêm camera → Điện thoại**, dùng điện thoại cùng Wi-Fi quét mã QR, bấm **Bắt đầu**. Trình duyệt trên điện thoại báo "không an toàn" thì chọn *Nâng cao → Tiếp tục* |
+| Dùng camera của trường (Hikvision, Dahua, Imou...) | **Camera → Thêm camera → Camera IP**, dán link `rtsp://...` (có sẵn địa chỉ mẫu), bấm **Thử kết nối**. Máy phải cùng mạng với camera |
+| Demo bằng video có sẵn | **Camera → Thêm camera → Video** (video tự phát lặp lại) |
+| Nhận cảnh báo qua Telegram | **Cài đặt → Thông báo**, làm theo 3 bước trên trang |
+| Xem lớp đang tập trung đến đâu | Thẻ **Mức độ tập trung** cạnh video: số 0–100 theo thời gian thực, trung bình, phút thấp nhất và biểu đồ theo từng phút (30 phút đến cả ngày). Điểm trung bình từng phút được lưu ở `logs/focus_<camera>.csv` |
+| Hình bị ngược trái-phải, camera đặt nghiêng, phòng tối | Trên video bấm nút **lật ngang**, hoặc nút chỉnh hình bên cạnh để **lật dọc, xoay 90°/180°, tăng độ sáng, phóng to giữa khung**. Nhớ riêng cho từng camera, áp dụng ngay |
+| Chỉnh độ nhạy | **Cài đặt → Nhận diện**, có tác dụng ngay |
+| Lấy số liệu cho báo cáo | **Thống kê** hoặc **Lịch sử → Tải nhật ký Excel** |
+
+Phím tắt: Ctrl+1…5 chuyển trang, Ctrl+N thêm camera, Ctrl+M đổi chế độ, F11 toàn màn hình, Ctrl+Q thoát.
 
 Màu khung: 🟩 bình thường · 🟧 có dấu hiệu nhưng chưa đủ lâu · 🟥 đang cảnh báo.
 
 > Bản nền tảng nhiều lớp, có tài khoản giáo viên và lãnh đạo, đang được cất trong
-> [_luu_tru/nen_tang_nhieu_lop/](_luu_tru/nen_tang_nhieu_lop/) và chưa hoàn thiện.
+> [tools/archive/nen_tang_nhieu_lop/](tools/archive/nen_tang_nhieu_lop/) và chưa hoàn thiện.
 
 ### Chỉ số tập trung
 
@@ -79,26 +82,25 @@ khung hình, làm mượt khoảng 5 giây. Từ 80 trở lên là "Tập trung 
 ### Âm thanh cảnh báo
 
 Khi có cảnh báo, loa phát tiếng chuông "ding-dong" rồi đọc **"Có học sinh dùng điện thoại"**, **"Có học sinh ngủ gật"** hoặc
-**"Có học sinh nằm gục xuống bàn"**. Âm thanh phát trên loa máy chạy hệ thống, và cả trên laptop hoặc điện thoại của giáo viên
-đang mở trang web.
+**"Có học sinh nằm gục xuống bàn"**. Âm thanh phát trên loa máy chạy hệ thống.
 
-Giọng đọc là file có sẵn trong `web/sounds/`, tạo bằng giọng Neural **vi-VN-HoaiMyNeural** của Microsoft Edge TTS (miễn phí),
+Giọng đọc là file có sẵn trong `resources/sounds/`, tạo bằng giọng Neural **vi-VN-HoaiMyNeural** của Microsoft Edge TTS (miễn phí),
 nên khi chạy không cần Internet. Muốn đổi giọng (cần Internet lúc tạo):
 
 ```bash
-python scripts/make_voices.py --voice vi-VN-NamMinhNeural   # giọng nam
-python scripts/make_voices.py --engine gtts                 # giọng Google
-python scripts/make_voices.py --rate=-15%                   # đọc chậm hơn
+python tools/make_voices.py --voice vi-VN-NamMinhNeural   # giọng nam
+python tools/make_voices.py --engine gtts                 # giọng Google
+python tools/make_voices.py --rate=-15%                   # đọc chậm hơn
 ```
 
-Muốn đổi câu đọc thì sửa `PHRASES` trong [scripts/make_voices.py](scripts/make_voices.py) rồi chạy lại lệnh trên.
+Muốn đổi câu đọc thì sửa `PHRASES` trong [tools/make_voices.py](tools/make_voices.py) rồi chạy lại lệnh trên.
 
-### Bản không cần web (cửa sổ OpenCV)
+### Bản xem trước bằng cửa sổ OpenCV
 
 ```bash
-python app.py                        # webcam, nhấn Q để thoát
-python app.py --source http://192.168.1.5:8080/video   # app IP Webcam trên điện thoại
-python app.py --source video.mp4 --save ket_qua.mp4
+python -m lophocai.cli.preview                        # webcam, nhấn Q để thoát
+python -m lophocai.cli.preview --source http://192.168.1.5:8080/video   # app IP Webcam trên điện thoại
+python -m lophocai.cli.preview --source video.mp4 --save ket_qua.mp4
 ```
 
 Mỗi cảnh báo được lưu vào `logs/events.csv` (mở bằng Excel), ảnh chụp lưu trong `logs/snapshots/`.
@@ -112,10 +114,10 @@ Khung hình ─► YOLO11-pose ─► người + ID theo dõi + 17 điểm khung
           └─► (tuỳ chọn) mô hình hành vi tự huấn luyện ──────────────────┘
 ```
 
-- **Tín hiệu tức thời** ([core/signals.py](core/signals.py)): tính tỉ lệ
+- **Tín hiệu tức thời** ([src/lophocai/detection/signals.py](src/lophocai/detection/signals.py)): tính tỉ lệ
   `(độ cao vai − độ cao đầu) / độ rộng vai`. Ngồi thẳng ≈ 0.5–1.0, gục xuống bàn < 0.15.
   Chia cho độ rộng vai để không phụ thuộc học sinh ngồi gần hay xa camera.
-- **Luật thời gian** ([core/rules.py](core/rules.py)): một tín hiệu phải kéo dài đủ lâu mới
+- **Luật thời gian** ([src/lophocai/detection/rules.py](src/lophocai/detection/rules.py)): một tín hiệu phải kéo dài đủ lâu mới
   cảnh báo, nhờ đó cúi nhặt bút hay liếc điện thoại 1 giây không bị báo nhầm. Có "thời gian ân
   hạn" 0.8 s để mô hình bỏ sót vài khung hình không làm reset bộ đếm, và "thời gian chờ" 15 s để
   không báo liên tục cùng một học sinh.
@@ -128,7 +130,7 @@ Mỗi lần mở app, bạn chọn nơi đặt camera (đổi lại được b�
 | Chế độ | Hành vi | Mô hình |
 |---|---|---|
 | **Lớp học** | Điện thoại, gục đầu xuống bàn, ngủ gục, nhắm mắt | Khung xương, phát hiện điện thoại, `weights/behavior_lop.pt` (phone, sleep, study), MediaPipe (mắt) |
-| **Hành lang** | Đánh nhau, hút thuốc | Khung xương cộng luật chuyển động ([core/fight.py](core/fight.py)), `weights/behavior.pt` (điếu thuốc) |
+| **Hành lang** | Đánh nhau, hút thuốc | Khung xương cộng luật chuyển động ([src/lophocai/detection/fight.py](src/lophocai/detection/fight.py)), `weights/behavior.pt` (điếu thuốc) |
 
 Cấu hình ở mục `modes` trong [config.yaml](config.yaml). Máy không có GPU tự dùng mô hình nhẹ (`pose_cpu`, `object_cpu`).
 
@@ -170,8 +172,8 @@ Mô hình `behavior_lop.pt` được huấn luyện trên bộ gộp từ các n
 [Classroom-Cell-Phone-Detection](https://universe.roboflow.com/computervisionprojects-siakl/classroom-cell-phone-detection),
 [phone-in-hand-detection](https://universe.roboflow.com/phone-in-hand) và
 [student-behaviour](https://universe.roboflow.com/burak-koyfx/student-behaviour).
-Quy trình gộp, dọn ảnh trùng, huấn luyện và so sánh: xem [TAI_LIEU_DU_LIEU_HUAN_LUYEN.md](TAI_LIEU_DU_LIEU_HUAN_LUYEN.md)
-và các script `prepare_merged_dataset.py`, `clean_dataset.py`, `compare_models.py` trong [scripts/](scripts/).
+Quy trình gộp, dọn ảnh trùng, huấn luyện và so sánh: xem [TAI_LIEU_DU_LIEU_HUAN_LUYEN.md](docs/TAI_LIEU_DU_LIEU_HUAN_LUYEN.md)
+và các script `prepare_merged_dataset.py`, `clean_dataset.py`, `compare_models.py` trong [tools/](tools/).
 
 Hãy đọc giấy phép (license) của từng bộ và ghi nguồn trong báo cáo.
 
@@ -183,7 +185,7 @@ bàn ghế, góc camera). Tự thu thập là điểm cộng lớn:
 1. Xin phép nhà trường và **được sự đồng ý của các bạn học sinh** (và phụ huynh) trước khi quay.
 2. Đặt điện thoại/webcam ở góc bảng, cao ~2 m, nhìn xuống lớp.
 3. Nhờ các bạn "diễn" từng hành vi, quay mỗi video 15–30 giây, xếp vào:
-   `clips/phone/`, `clips/head_down/`, `clips/sleeping/`, `clips/normal/`.
+   `workspace/clips/phone/`, `workspace/clips/head_down/`, `workspace/clips/sleeping/`, `workspace/clips/normal/`.
 4. Muốn huấn luyện mô hình riêng: trích ảnh từ video, gán nhãn bằng
    [Roboflow](https://roboflow.com) hoặc [CVAT](https://www.cvat.ai) (miễn phí), xuất định dạng YOLO.
 
@@ -193,9 +195,9 @@ bàn ghế, góc camera). Tự thu thập là điểm cộng lớn:
 
 ```bash
 pip install kagglehub
-python scripts/download_datasets.py eyes
-python scripts/prepare_eye_dataset.py --src data/nguon/raw_eyes
-python scripts/train_eye_classifier.py --epochs 20
+python tools/download_datasets.py eyes
+python tools/prepare_eye_dataset.py --src workspace/data/nguon/raw_eyes
+python tools/train_eye_classifier.py --epochs 20
 ```
 
 Xong sẽ có `weights/eye_cls.pt`. Muốn dùng thì đặt `models.eye_method: classifier` trong config.yaml
@@ -211,8 +213,8 @@ hình tự huấn luyện tốt hơn thì cần thu thập ảnh mắt từ chí
 
 ```bash
 pip install roboflow
-python scripts/download_datasets.py roboflow --api-key <KEY_CỦA_BẠN>
-python scripts/train_behavior.py --data data/nguon/student-behaviour/data.yaml --epochs 50
+python tools/download_datasets.py roboflow --api-key <KEY_CỦA_BẠN>
+python tools/train_behavior.py --data workspace/data/nguon/student-behaviour/data.yaml --epochs 50
 ```
 
 Hoặc dùng SCB-Dataset / dữ liệu tự gán nhãn: trỏ `--data` tới file `data.yaml` tương ứng.
@@ -220,19 +222,19 @@ Rồi sửa [config.yaml](config.yaml): `models.custom_behavior: weights/behavio
 `custom_class_map` cho khớp tên lớp. Không có GPU thì dùng
 [Google Colab](https://colab.research.google.com) miễn phí.
 
-Biểu đồ trong `runs/behavior/` (`results.png`, `confusion_matrix.png`, `PR_curve.png`) đưa
+Biểu đồ trong `workspace/runs/behavior/` (`results.png`, `confusion_matrix.png`, `PR_curve.png`) đưa
 thẳng vào báo cáo được.
 
 ## 6. Đánh giá độ chính xác
 
 ```bash
-python evaluate_clips.py --clips clips
+python -m lophocai.cli.evaluate --clips workspace/clips
 ```
 
 In bảng tỉ lệ phát hiện đúng cho từng hành vi và số lần báo nhầm trên video bình thường,
 chi tiết lưu ở `logs/evaluation.csv`. Nên có ít nhất 10 video cho mỗi nhóm.
 
-Kiểm tra luật (không cần camera): `python tests/test_rules.py`
+Kiểm tra luật (không cần camera): `pytest`
 
 ## 7. Gợi ý cho hồ sơ KHKT
 
@@ -251,20 +253,23 @@ Kiểm tra luật (không cần camera): `python tests/test_rules.py`
 ## Cấu trúc thư mục
 
 ```
-start.bat / start.sh   Bấm một lần để cài và chạy (từ mã nguồn)
+src/lophocai/          Mã nguồn
+  desktop/               Giao diện (cửa sổ chính, các trang, hộp thoại, giao diện sáng/tối)
+  application/           Điều phối: Engine (camera, chế độ, cài đặt, cảnh báo), phần cứng, cài đặt
+  runtime/               Luồng xử lý từng camera, bộ giới hạn xử lý AI đồng thời
+  detection/             Lõi AI: pipeline, tín hiệu khung xương, luật thời gian, đánh nhau
+  video/                 Đọc webcam / camera IP / điện thoại / video, chỉnh hình, vẽ khung nhãn
+  storage/               Đường dẫn dữ liệu, nhật ký cảnh báo, chỉ số tập trung, dọn ổ cứng
+  integrations/          Âm thanh, giọng đọc, máy chủ nhận hình từ điện thoại
+  cli/                   Xem trước bằng OpenCV, đánh giá trên video mẫu
+resources/             Âm thanh cảnh báo (sounds/), trang điện thoại (phone/)
+weights/               Mô hình AI
+tools/                 Tải dữ liệu, chuẩn bị dữ liệu, huấn luyện, tạo giọng đọc (archive/: bản nhiều lớp chưa hoàn thiện)
+tests/                 Kiểm thử luật (chạy: pytest)
 packaging/             Đóng gói bộ cài (.deb Ubuntu, .exe Windows)
+docs/                  Báo cáo, tài liệu, kế hoạch
+workspace/             Dữ liệu sinh ra khi chạy và huấn luyện (appdata/, data/, runs/, clips/) — không đưa lên git
 .github/workflows/     Tự build bộ cài trên GitHub
-web.py                 Chương trình chính: AI + giao diện web (chỉ mở trên máy này)
-web/                   Giao diện (index.html: màn hình chính, phone.html: điện thoại làm camera)
-core/paths.py          Nơi lưu dữ liệu (chạy code / app đã cài)
-app.py                 Bản cửa sổ OpenCV, không cần web
-core/camera.py         Đọc webcam / camera IP / điện thoại / video
-evaluate_clips.py      Đánh giá trên video mẫu
 config.yaml            Toàn bộ ngưỡng / cấu hình
-core/pipeline.py       Ghép các mô hình AI
-core/signals.py        Tính tín hiệu từ khung xương
-core/rules.py          Luật thời gian -> hành vi
-core/display.py        Vẽ, âm thanh, nhật ký
-scripts/               Tải dữ liệu, chuẩn bị dữ liệu, huấn luyện
-tests/                 Kiểm thử luật
+start.bat / start.sh   Bấm một lần để cài và chạy (từ mã nguồn)
 ```

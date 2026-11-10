@@ -1,4 +1,4 @@
-# Cấu hình PyInstaller: đóng gói web.py + mô hình AI + giao diện thành 1 thư mục chạy được,
+# Cấu hình PyInstaller: đóng gói ứng dụng desktop + mô hình AI + tài nguyên thành 1 thư mục chạy được,
 # không cần cài Python. Dùng chung cho Linux và Windows.
 #   pyinstaller packaging/lophocai.spec --noconfirm
 import sys
@@ -12,7 +12,7 @@ ROOT = Path(SPECPATH).parent  # noqa: F821 (SPECPATH do PyInstaller cung cấp)
 # build trên máy có nhiều file lạ trong weights/ cũng không làm bộ cài phình ra.
 SKIP_WEIGHTS = ("yolo11m", "yolo11x", "yolo11s.pt", "_cu.pt", "behavior_v1.pt")
 datas = [
-    (str(ROOT / "web"), "web"),
+    (str(ROOT / "resources"), "resources"),   # âm thanh cảnh báo, trang điện thoại
     *[(str(f), "weights") for f in sorted((ROOT / "weights").iterdir())
       if f.is_file() and not any(k in f.name for k in SKIP_WEIGHTS)],
     (str(ROOT / "config.yaml"), "."),
@@ -25,16 +25,20 @@ for pkg in ("ultralytics", "mediapipe", "torchvision"):
     binaries += b
     hiddenimports += h
 hiddenimports += collect_submodules("uvicorn") + [
-    "websockets", "python_multipart", "multipart", "qrcode.image.svg", "lap", "soundfile",
+    "websockets", "qrcode.image.svg", "lap", "soundfile",
 ]
 
 a = Analysis(  # noqa: F821
-    [str(ROOT / "web.py")],
-    pathex=[str(ROOT)],
+    [str(ROOT / "packaging" / "launcher.py")],
+    pathex=[str(ROOT / "src")],
     binaries=binaries,
     datas=datas,
     hiddenimports=hiddenimports,
-    excludes=["tensorflow", "tensorboard", "IPython", "jupyter", "notebook", "pytest"],
+    # Bộ PySide6 đầy đủ rất nặng; app chỉ dùng Widgets/Gui/Core/Svg nên loại các phần còn lại
+    excludes=["tensorflow", "tensorboard", "IPython", "jupyter", "notebook", "pytest",
+              "PySide6.QtWebEngineCore", "PySide6.QtWebEngineWidgets", "PySide6.QtWebEngineQuick",
+              "PySide6.QtQml", "PySide6.QtQuick", "PySide6.QtQuickWidgets", "PySide6.QtMultimedia",
+              "PySide6.Qt3DCore", "PySide6.QtCharts", "PySide6.QtDataVisualization", "PySide6.QtPdf"],
     # Giữ mã nguồn .py của torch/ultralytics: một số chỗ cần đọc mã nguồn lúc chạy
     module_collection_mode={"torch": "pyz+py", "torchvision": "pyz+py", "ultralytics": "pyz+py"},
 )
@@ -45,7 +49,7 @@ exe = EXE(  # noqa: F821
     [],
     exclude_binaries=True,
     name="LopHocAI",
-    console=False,  # không hiện cửa sổ dòng lệnh; giao diện mở thành cửa sổ app, thông tin ghi vào app.log
+    console=False,  # không hiện cửa sổ dòng lệnh; thông tin ghi vào app.log
     icon=str(ROOT / "packaging" / ("icon.ico" if sys.platform == "win32" else "icon.png")),
 )
 coll = COLLECT(exe, a.binaries, a.datas, name="LopHocAI")  # noqa: F821

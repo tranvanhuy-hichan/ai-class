@@ -1,12 +1,9 @@
 """Kiểm tra luật không cần camera:  python -m pytest tests  (hoặc python tests/test_rules.py)"""
-import sys
-from pathlib import Path
 
 import numpy as np
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from core import signals as sg  # noqa: E402
-from core.rules import BehaviorRules  # noqa: E402
+from lophocai.detection import signals as sg  # noqa: E402
+from lophocai.detection.rules import BehaviorRules  # noqa: E402
 
 TIMING = {"phone": 2, "head_down": 3, "sleeping": 10, "eyes_closed": 3, "grace": 0.8, "cooldown": 15}
 

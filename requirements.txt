@@ -1,15 +1,19 @@
 ultralytics>=8.3
 opencv-python
+numpy
 pillow
 pyyaml
 lap
 mediapipe
+requests
+psutil
+PySide6
+qrcode
+# Máy chủ nhận hình từ điện thoại (camera điện thoại):
 fastapi
 uvicorn[standard]
-python-multipart
-qrcode
 cryptography
-# Chỉ cần khi tạo lại giọng đọc (scripts/make_voices.py):
+# Chỉ cần khi tạo lại giọng đọc (tools/make_voices.py):
 edge-tts
 gTTS
 soundfile

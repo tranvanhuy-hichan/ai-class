@@ -8,17 +8,16 @@ __pycache__/
 build/
 dist/
 
-# Dữ liệu sinh ra khi chạy (nhật ký, ảnh cảnh báo, video tải lên, chứng chỉ, cài đặt)
-appdata/
+# Mọi thứ sinh ra khi chạy/huấn luyện nằm trong workspace/ (nhật ký, ảnh cảnh báo, cài đặt, dữ liệu
+# huấn luyện, kết quả huấn luyện, video mẫu). Nặng, tải lại bằng tools/download_datasets.py
+workspace/
 logs/
 uploads/
 certs/
-web_settings.json
 
-# Dữ liệu huấn luyện và kết quả huấn luyện (nặng, tải lại bằng scripts/download_datasets.py)
-data/
-runs/
-clips/
+# Cấu hình cục bộ của công cụ hỗ trợ
+.claude/
+.pytest_cache/
 
 # Hệ điều hành / trình soạn thảo
 .DS_Store
@@ -34,3 +33,4 @@ weights/yolo11[msx]*.pt
 weights/yolo11[msx]-*.pt
 weights/*_cu.pt
 !weights/yolo11s-pose.pt
+*.egg-info/

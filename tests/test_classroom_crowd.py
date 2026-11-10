@@ -1,12 +1,9 @@
 """Kiểm tra các tình huống tối ưu hóa cho lớp học đông người."""
-import sys
-from pathlib import Path
 import numpy as np
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from core import signals as sg
-from core.pipeline import SpatialTracker, Pipeline, load_config
-from core.rules import BehaviorRules
+from lophocai.detection import signals as sg
+from lophocai.detection.pipeline import SpatialTracker, Pipeline, load_config
+from lophocai.detection.rules import BehaviorRules
 TIMING = {"phone": 2, "head_down": 3, "sleeping": 8, "eyes_closed": 3, "grace": 1.2, "cooldown": 15}
 
 

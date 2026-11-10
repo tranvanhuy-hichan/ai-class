@@ -1,11 +1,9 @@
 """Kiểm tra chỉ số tập trung:  python tests/test_focus.py"""
-import sys
 import tempfile
 from datetime import datetime, timedelta
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from core.focus import FocusTracker, instant, label  # noqa: E402
+from lophocai.storage.focus import FocusTracker, instant, label  # noqa: E402
 
 normal = {"active": {}, "signals": {}}
 tentative = {"active": {}, "signals": {"head_down": True}}

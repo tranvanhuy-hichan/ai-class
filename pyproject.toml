@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lophocai"
+version = "1.0.0"
+description = "Hệ thống cảnh báo hành vi lớp học (ứng dụng desktop)"
+requires-python = ">=3.10"
+dependencies = [
+    "ultralytics>=8.3",
+    "opencv-python",
+    "numpy",
+    "pillow",
+    "pyyaml",
+    "lap",
+    "mediapipe",
+    "requests",
+    "psutil",
+    "PySide6",
+    "qrcode",
+    "fastapi",
+    "uvicorn[standard]",
+    "cryptography",
+]
+
+[project.optional-dependencies]
+training = [
+    "edge-tts",
+    "gTTS",
+    "soundfile",
+    "kagglehub",
+    "roboflow",
+]
+dev = [
+    "pytest",
+]
+
+[project.scripts]
+lophocai = "lophocai.desktop.app:main"
+lophocai-preview = "lophocai.cli.preview:main"
+lophocai-evaluate = "lophocai.cli.evaluate:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]

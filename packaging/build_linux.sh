@@ -43,7 +43,7 @@ Version: $VERSION
 Architecture: amd64
 Maintainer: tranvanhuy-hichan <tranvanhuy064206@gmail.com>
 Installed-Size: $SIZE
-Depends: libgl1, libglib2.0-0t64 | libglib2.0-0
+Depends: libgl1, libglib2.0-0t64 | libglib2.0-0, libegl1, libxkbcommon-x11-0, libxcb-cursor0
 Recommends: pulseaudio-utils
 Section: education
 Priority: optional
