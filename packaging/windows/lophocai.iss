@@ -28,6 +28,10 @@ PrivilegesRequiredOverridesAllowed=dialog
 [Tasks]
 Name: "desktopicon"; Description: "Tạo biểu tượng ngoài màn hình Desktop"; GroupDescription: "Biểu tượng:"
 
+[InstallDelete]
+; Nâng cấp từ bản web cũ: xoá thư mục giao diện web không còn dùng
+Type: filesandordirs; Name: "{app}\web"
+
 [Files]
 Source: "..\..\dist\LopHocAI\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
